@@ -1339,19 +1339,21 @@ body.header-compact .logo {
     }
 
     .group-subnav {
-        display: grid;
-        grid-template-columns: 1fr;
+        display: flex;
         gap: 7px;
         margin-top: 6px;
         padding: 8px;
+        overflow-x: auto;
     }
 
     .subnav-item {
-        justify-content: flex-start;
-        width: 100%;
+        justify-content: center;
+        width: auto;
+        flex: 0 0 auto;
         min-height: 44px;
         padding: 12px 13px;
-        text-align: left;
+        text-align: center;
+        white-space: nowrap;
     }
 
     .selected-subnav {

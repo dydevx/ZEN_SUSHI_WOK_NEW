@@ -619,7 +619,7 @@ function renderGroupSubnav(group, groupButton, activeKey = getGroupItemKey(group
         item.className = "subnav-item";
         item.dataset.key = getGroupItemKey(groupItem);
         item.textContent = groupItem.label;
-        item.addEventListener("click", () => selectCategory(group, groupItem, groupButton, mobileMenuQuery.matches));
+        item.addEventListener("click", () => selectCategory(group, groupItem, groupButton, false));
         fragment.appendChild(item);
     });
 
@@ -642,7 +642,7 @@ function renderGroupNav() {
             const selectedItem = selectedGroupItems.get(group.label)
                 || group.items.find((groupItem) => getGroupItemKey(groupItem) === currentKey)
                 || group.items[0];
-            selectCategory(group, selectedItem, item, mobileMenuQuery.matches);
+            selectCategory(group, selectedItem, item, false);
         });
         nav.appendChild(item);
     });
@@ -662,7 +662,7 @@ function scrollToMenu() {
     const firstGroup = menuGroups[0];
     const firstNavItem = document.querySelector(".nav-item");
     if (!firstGroup || !firstNavItem) return;
-    selectCategory(firstGroup, firstGroup.items[0], firstNavItem, mobileMenuQuery.matches);
+    selectCategory(firstGroup, firstGroup.items[0], firstNavItem, false);
 }
 
 function showHome() {
