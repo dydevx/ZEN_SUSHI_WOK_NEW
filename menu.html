@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZEN SUSHI WOK</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="menu-page.css">
+    
+</head>
+<body>
+
+<header class="site-header">
+    <div class="top-header">
+        <a href="index.html" class="logo">ZEN SUSHI <span>WOK</span></a>
+        <div class="cart-actions">
+            <a class="home-link" href="#homeSection" onclick="showHome(); return false;" aria-label="Retour au début du menu">Accueil</a>
+            <button class="cart-pill" type="button" aria-label="Panier">
+                <span>Panier</span>
+                <strong id="cartCount">0</strong>
+            </button>
+            <button class="clear-cart-button" type="button" id="clearCartButton" aria-label="Vider le panier" hidden>
+                Vider
+            </button>
+        </div>
+    </div>
+    <div class="nav-container">
+        <nav class="category-nav" id="mainNav" aria-label="Catégories du menu"></nav>
+    </div>
+</header>
+
+<section class="home-section" id="homeSection">
+    <div class="home-content">
+        <h1>ZEN SUSHI WOK</h1>
+        <p>Carte japonaise et wok, préparée à la minute avec des produits frais.</p>
+        <button type="button" onclick="scrollToMenu()">Voir le menu</button>
+    </div>
+</section>
+
+<main class="food-container" id="menuContent">
+    <h2 class="category-title" id="currentCategoryName"></h2>
+    <div class="food-grid" id="foodDisplay"></div>
+</main>
+
+<div class="dish-modal" id="dishModal" aria-hidden="true">
+    <div class="modal-backdrop" data-close-modal></div>
+    <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalDishName">
+        <button class="modal-close" type="button" data-close-modal aria-label="Fermer">&times;</button>
+        <div class="modal-grid">
+            <div class="modal-image" id="modalImage"></div>
+            <div class="modal-content">
+                <h2 class="modal-title" id="modalDishName"></h2>
+                <div class="modal-meta">
+                    <span class="food-pieces" id="modalPieces"></span>
+                    <strong class="food-price" id="modalPrice"></strong>
+                </div>
+                <div class="detail-block">
+                    <h3>Description</h3>
+                    <p id="modalDescription"></p>
+                </div>
+                <div class="detail-block">
+                    <h3>Composition</h3>
+                    <p id="modalComposition"></p>
+                </div>
+                <div class="detail-block">
+                    <h3>Allergènes</h3>
+                    <ul class="allergen-list" id="modalAllergenes"></ul>
+                </div>
+                <div id="modalOptionsBlock">
+                    <div class="options-title">Options</div>
+                    <div class="option-list">
+                        <label><input type="checkbox" value="Sans sésame"> Sans sésame</label>
+                        <label><input type="checkbox" value="Supplément sauce"> Supplément sauce</label>
+                    </div>
+                </div>
+                <button class="modal-add" type="button" id="modalAddButton">Ajouter au panier</button>
+            </div>
+        </div>
+    </section>
+</div>
+
+<div class="toast" id="cartToast" role="status" aria-live="polite"></div>
+
+<footer class="site-footer">
+    ZEN SUSHI WOK - Menu, prix et allergènes à confirmer auprès du restaurant.
+</footer>
+
+<script src="menu-data.js"></script>
+<script src="menu-page.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title> ZEN SUSHI WOK</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body{
+    background-color:#000000;
+    background-image:url("background.jpg");
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+    background-attachment:fixed;
+    color:#fff;
+    font-family:'Montserrat', sans-serif;
+    overflow-x:hidden;
+}
+
+/* SECTION */
+.social-section{
+    background:hsla(0,0%,0%,0.8);
+    width:100%;
+}
+
+/* TOP */
+.social-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:24px;
+    padding:28px 60px;
+}
+
+.home-button{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    flex:0 0 auto;
+    gap:8px;
+    min-height:42px;
+    padding:0 14px;
+    border-radius:8px;
+    background:#fff;
+    color:#111;
+    font-size:12px;
+    font-weight:800;
+    text-decoration:none;
+    text-transform:uppercase;
+    transition:0.25s;
+}
+
+.home-button:hover{
+    background:#d83a2e;
+    color:#fff;
+    transform:translateY(-2px);
+}
+
+.social-title{
+    flex:1;
+    font-family:'Bebas Neue', sans-serif;
+    font-size:clamp(22px,3vw,36px);
+    letter-spacing:2px;
+}
+
+.social-icons{
+    display:flex;
+    gap:10px;
+}
+
+.social-icons a{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:40px;
+    height:40px;
+    border-radius:8px;
+    background:#333;
+    color:#fff;
+    font-size:17px;
+    transition:0.5s;
+}
+
+.social-icons a:hover{
+    background:#d83a2e;
+    color:#fff;
+    transform:translateY(-3px);
+}
+
+/* MARQUEE */
+.marquee-wrapper{
+    width:100%;
+    overflow:hidden;
+    position:relative;
+    height:320px;
+}
+
+/* fade */
+.marquee-wrapper::before,
+.marquee-wrapper::after{
+    content:'';
+    position:absolute;
+    top:0;
+    width:80px;
+    height:100%;
+    z-index:2;
+}
+
+.marquee-wrapper::before{
+    left:0;
+    background:#000;
+    opacity:0.55;
+}
+
+.marquee-wrapper::after{
+    right:0;
+    background:#000;
+    opacity:0.55;
+}
+
+.marquee-track{
+    display:flex;
+    width:max-content;
+    animation:marquee 40s linear infinite;
+    gap:6px;
+}
+
+.marquee-track:hover{
+    animation-play-state:paused;
+}
+
+@keyframes marquee{
+    0%{ transform:translateX(0);}
+    100%{ transform:translateX(-50%);}
+}
+
+.marquee-img{
+    width:300px;
+    height:320px;
+    object-fit:cover;
+    flex-shrink:0;
+    transition:0.4s;
+    filter:brightness(0.85);
+}
+
+.marquee-img:hover{
+    transform:scale(1.05);
+    filter:brightness(1);
+}
+
+/* MOBILE */
+@media(max-width:768px){
+    .social-top{
+        flex-direction:column;
+        align-items:flex-start;
+        gap:15px;
+        padding:20px;
+    }
+
+    .home-button{
+        min-height:40px;
+    }
+
+    .marquee-img{
+        width:200px;
+        height:220px;
+    }
+
+    .marquee-wrapper{
+        height:220px;
+    }
+}
+</style>
+
+</head>
+
+<body>
+
+<section class="social-section">
+
+<div class="social-top">
+    <a class="home-button" href="index.html">
+        <i class="fa-solid fa-house"></i>
+        Accueil
+    </a>
+    <div class="social-title">
+        RETROUVER ZEN SUSHI WOK<br>
+        SUR LES RÉSEAUX SOCIAUX
+    </div>
+    <div class="social-icons">
+        <a href="https://www.instagram.com/zensushiwok/" target="_blank"><i class="fab fa-instagram"></i></a>
+        <a href="https://www.facebook.com/zensushiwok" target="_blank"><i class="fab fa-facebook-f"></i></a>
+        <a href="https://youtube.com/@zensushiwok?si=p4I9uP7EUKrFqA6r"><i class="fab fa-youtube"></i></a>
+        <a href="https://www.tiktok.com/@zen_sushi_wok?is_from_webapp=1&sender_device=pc"><i class="fab fa-tiktok"></i></a>
+    </div>
+</div>
+
+<div class="marquee-wrapper">
+    <div class="marquee-track" id="marqueeTrack">
+
+        <!-- ✅ Đã sửa: bỏ dấu / ở đầu tất cả các src -->
+        <img class="marquee-img" src="menu/10. TEMAKI/temaki1.png" alt="temaki 1">
+        <img class="marquee-img" src="menu/10. TEMAKI/temaki2.png" alt="temaki 2">
+        <img class="marquee-img" src="menu/10. TEMAKI/temaki3.png" alt="temaki 3">
+        <img class="marquee-img" src="menu/10. TEMAKI/temaki4.png" alt="temaki 4">
+        <img class="marquee-img" src="menu/10. TEMAKI/temaki5.png" alt="temaki 5">
+        <img class="marquee-img" src="menu/1.PLATEAU/sushi7.png" alt="sushi 7">
+        <img class="marquee-img" src="menu/1.PLATEAU/sushi2.png" alt="sushi 2">
+        <img class="marquee-img" src="menu/11. SASHIMI/sashimi1.png" alt="sashimi 1">
+        <img class="marquee-img" src="menu/11. SASHIMI/sashimi2.png" alt="sashimi 2">
+        <img class="marquee-img" src="menu/11. SASHIMI/sashimi3.png" alt="sashimi 3">
+        <img class="marquee-img" src="menu/11. SASHIMI/sashimi4.png" alt="sashimi 4">
+        <img class="marquee-img" src="menu/11. SASHIMI/sashimi5.png" alt="sashimi 5">
+
+    </div>
+</div>
+
+</section>
+
+<script>
+const track = document.getElementById('marqueeTrack');
+track.innerHTML += track.innerHTML; // loop mượt
+</script>
+
+</body>
+</html>

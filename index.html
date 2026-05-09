@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZEN SUSHI WOK</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="menu-page.css">
+    <style>
+        .top-header {
+            flex-wrap: wrap;
+        }
+
+        .page-links {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .page-links::-webkit-scrollbar {
+            display: none;
+        }
+
+        .page-links a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 38px;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 800;
+            text-decoration: none;
+            text-transform: uppercase;
+            white-space: nowrap;
+            transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .page-links a:hover {
+            border-color: var(--accent);
+            background: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        .home-section {
+            align-items: center;
+            justify-content: flex-start;
+            min-height: clamp(660px, calc(100svh - 112px), 900px);
+            padding: 64px max(20px, calc((100vw - 1220px) / 2)) 80px;
+            background-color: #090909;
+            background-image:
+                linear-gradient(90deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.16) 47%, rgba(0, 0, 0, 0.72) 100%),
+                linear-gradient(90deg, rgba(8, 0, 0, 0.58) 0%, rgba(8, 0, 0, 0.58) 48%, rgba(6, 6, 6, 0.42) 48%, rgba(6, 6, 6, 0.42) 100%),
+                url("background.png"),
+                url("background.jpg");
+            background-position: center, center, right center, left center;
+            background-repeat: no-repeat;
+            background-size: 100% 100%, 100% 100%, auto 100%, 52% 100%;
+            text-align: left;
+        }
+
+        .home-content {
+            position: relative;
+            z-index: 1;
+            width: min(680px, 100%);
+        }
+
+        .home-highlights {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 28px;
+            margin-bottom: 54px;
+            padding: 2px 0 10px;
+            text-align: center;
+        }
+
+        .highlight-item {
+            display: flex;
+            align-items: center;
+            flex-direction: column;
+            color: #ffffff;
+        }
+
+        .highlight-icon {
+            display: grid;
+            place-items: center;
+            width: 106px;
+            height: 106px;
+            margin-bottom: 18px;
+            border-radius: 50%;
+            background: #243447;
+            color: #caa986;
+            font-size: 36px;
+        }
+
+        .highlight-item h3 {
+            margin-bottom: 10px;
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .highlight-item p {
+            max-width: 260px;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 500;
+            line-height: 1.55;
+        }
+
+        .eyebrow {
+            margin-bottom: 12px;
+            color: #ffffff;
+            font-size: clamp(16px, 2.4vw, 24px);
+            font-weight: 800;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .home-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .home-actions a,
+        .home-actions button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 48px;
+            padding: 0 18px;
+            border: 0;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #111111;
+            font-size: 14px;
+            font-weight: 800;
+            text-decoration: none;
+            text-transform: uppercase;
+            transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+
+        .home-actions button {
+            background: var(--accent);
+            color: #ffffff;
+        }
+
+        .home-actions a:hover,
+        .home-actions button:hover {
+            background: var(--accent-dark);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        .single-section {
+            padding: 68px max(16px, calc((100vw - 1220px) / 2));
+            background: #0d0d0d;
+            color: #ffffff;
+        }
+
+        .single-section.alt {
+            background:
+                linear-gradient(rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.72)),
+                url("background.jpg") center / cover fixed;
+        }
+
+        .section-heading {
+            margin-bottom: 28px;
+        }
+
+        .section-heading h2 {
+            color: #ffffff;
+            font-size: clamp(26px, 4vw, 42px);
+            font-weight: 800;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }
+
+        .section-heading p {
+            max-width: 680px;
+            margin-top: 10px;
+            color: rgba(255, 255, 255, 0.76);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .combo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 18px;
+        }
+
+        .combo-card,
+        .signature-card {
+            overflow: hidden;
+            border-radius: 8px;
+            background: #050505;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+        }
+
+        .combo-card img {
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            object-fit: cover;
+        }
+
+        .combo-body {
+            padding: 15px;
+        }
+
+        .tag {
+            display: inline-block;
+            margin-bottom: 9px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            background: var(--accent);
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .combo-body h3 {
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .price {
+            display: block;
+            margin-top: 10px;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 800;
+        }
+
+        .slider-wrap {
+            position: relative;
+        }
+
+        .signature-slider {
+            display: flex;
+            gap: 18px;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            scrollbar-width: none;
+        }
+
+        .signature-slider::-webkit-scrollbar {
+            display: none;
+        }
+
+        .signature-card {
+            position: relative;
+            flex: 0 0 250px;
+            aspect-ratio: 1 / 1;
+            cursor: pointer;
+        }
+
+        .signature-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: transform 0.25s ease;
+        }
+
+        .signature-card:hover img {
+            transform: scale(1.06);
+        }
+
+        .signature-card span {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.78);
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.35;
+        }
+
+        .slider-button {
+            position: absolute;
+            top: 50%;
+            z-index: 5;
+            display: grid;
+            place-items: center;
+            width: 42px;
+            height: 42px;
+            border: 0;
+            border-radius: 999px;
+            background: #ffffff;
+            color: #111111;
+            font-size: 18px;
+            transform: translateY(-50%);
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.34);
+        }
+
+        .slider-button:hover {
+            background: var(--accent);
+            color: #ffffff;
+        }
+
+        .slider-button.prev {
+            left: -10px;
+        }
+
+        .slider-button.next {
+            right: -10px;
+        }
+
+        .social-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            margin-bottom: 28px;
+        }
+
+        .social-icons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .social-icons a {
+            display: grid;
+            place-items: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            font-size: 18px;
+            text-decoration: none;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .social-icons a:hover {
+            background: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .site-footer {
+            padding: 0;
+            border-top: 0;
+            background:
+                linear-gradient(rgba(8, 0, 0, 0.84), rgba(8, 0, 0, 0.9)),
+                url("background.jpg") center / cover;
+            color: #ffffff;
+            text-align: left;
+        }
+
+        .footer-inner {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(420px, 0.92fr);
+            gap: 46px;
+            width: min(1350px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 52px 0 18px;
+        }
+
+        .footer-brand {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .footer-brand img {
+            width: 96px;
+            height: 96px;
+            object-fit: cover;
+        }
+
+        .footer-brand h2 {
+            color: #ffffff;
+            font-size: clamp(28px, 4vw, 36px);
+            font-weight: 800;
+            letter-spacing: 0;
+        }
+
+        .footer-copy {
+            max-width: 640px;
+            color: #ffffff;
+            font-size: 15px;
+            line-height: 1.65;
+        }
+
+        .footer-details {
+            display: grid;
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .footer-detail {
+            display: grid;
+            grid-template-columns: 28px 1fr;
+            gap: 12px;
+            align-items: start;
+            color: #ffffff;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .footer-detail i {
+            color: #ffffff;
+            font-size: 22px;
+            line-height: 1.3;
+        }
+
+        .footer-detail a {
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .footer-socials {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            margin-top: 24px;
+            font-size: 52px;
+        }
+
+        .footer-socials a {
+            color: #ffffff;
+            line-height: 1;
+            text-decoration: none;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .footer-socials a:hover {
+            opacity: 0.82;
+            transform: translateY(-2px);
+        }
+
+        .footer-socials .facebook {
+            color: #4aa3d8;
+        }
+
+        .footer-socials .instagram {
+            color: #e0528d;
+        }
+
+        .footer-socials .youtube {
+            color: #ff1f1f;
+        }
+
+        .footer-map iframe {
+            width: 100%;
+            min-height: 470px;
+            border: 0;
+            display: block;
+        }
+
+        .footer-bottom {
+            padding: 0 16px 18px;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        .marquee-wrapper {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            overflow: hidden;
+        }
+
+        .marquee-track {
+            display: flex;
+            width: max-content;
+            gap: 8px;
+            animation: marquee 42s linear infinite;
+        }
+
+        .marquee-track:hover {
+            animation-play-state: paused;
+        }
+
+        .marquee-img {
+            width: 280px;
+            height: 300px;
+            flex-shrink: 0;
+            object-fit: cover;
+            filter: brightness(0.88);
+            transition: filter 0.2s ease, transform 0.2s ease;
+        }
+
+        .marquee-img:hover {
+            filter: brightness(1);
+            transform: scale(1.03);
+        }
+
+        @keyframes marquee {
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(-50%);
+            }
+        }
+
+        @media (max-width: 860px) {
+            .top-header {
+                align-items: flex-start;
+            }
+
+            .page-links {
+                order: 3;
+                width: 100%;
+            }
+
+            .home-section {
+                min-height: calc(100svh - 156px);
+                padding: 48px 16px 42px;
+                background-image:
+                    linear-gradient(180deg, rgba(7, 0, 0, 0.5), rgba(7, 0, 0, 0.88)),
+                    linear-gradient(90deg, rgba(8, 0, 0, 0.66) 0%, rgba(8, 0, 0, 0.66) 54%, rgba(6, 6, 6, 0.48) 54%, rgba(6, 6, 6, 0.48) 100%),
+                    url("background.png"),
+                    url("background.jpg");
+                background-position: center, center, right center, left center;
+                background-size: 100% 100%, 100% 100%, auto 100%, 58% 100%;
+            }
+
+            .home-highlights {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 28px 18px;
+                margin-bottom: 34px;
+            }
+
+            .highlight-icon {
+                width: 86px;
+                height: 86px;
+                font-size: 30px;
+            }
+
+            .social-top {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .footer-inner {
+                grid-template-columns: 1fr;
+                gap: 28px;
+                padding-top: 38px;
+            }
+
+            .footer-map iframe {
+                min-height: 340px;
+            }
+
+            .signature-card {
+                flex-basis: 190px;
+            }
+
+            .marquee-wrapper {
+                height: 220px;
+            }
+
+            .marquee-img {
+                width: 200px;
+                height: 220px;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .home-highlights {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-brand {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .footer-socials {
+                font-size: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <div class="top-header">
+            <a href="#homeSection" class="logo" onclick="showHome(); return false;">ZEN SUSHI <span>WOK</span></a>
+            <nav class="page-links" aria-label="Navigation des pages">
+                <a href="#menuContent" onclick="scrollToMenu(); return false;">Menu</a>
+                <a href="#combos">Combos</a>
+                <a href="#plats-signature">Signatures</a>
+                <a href="#service">Service</a>
+            </nav>
+            <div class="cart-actions">
+                <a class="home-link" href="#homeSection" onclick="showHome(); return false;" aria-label="Retour à l'accueil">Accueil</a>
+                <button class="cart-pill" type="button" id="cartButton" aria-label="Panier">
+                    <span>Panier</span>
+                    <strong id="cartCount">0</strong>
+                    <em id="cartTotalHeader">0,00€</em>
+                </button>
+                <button class="clear-cart-button" type="button" id="checkoutButton" aria-label="Commander" hidden>
+                    Commander
+                </button>
+            </div>
+        </div>
+        <div class="nav-container">
+            <nav class="category-nav" id="mainNav" aria-label="Catégories du menu"></nav>
+        </div>
+    </header>
+
+    <section class="home-section" id="homeSection">
+        <div class="home-content">
+            <div class="eyebrow">L'art culinaire japonais</div>
+            <h1>ZEN SUSHI WOK</h1>
+            <p>Sushis frais, plats chauds, wok et créations signature préparés à la minute avec des produits frais.</p>
+            <div class="service-mode-panel" aria-label="Choix du service">
+                <div class="service-mode-buttons">
+                    <button class="service-mode-button active" type="button" data-service-mode="delivery">
+                        <i class="fa-solid fa-motorcycle"></i>
+                        Livraison
+                    </button>
+                    <button class="service-mode-button" type="button" data-service-mode="pickup">
+                        <i class="fa-solid fa-bag-shopping"></i>
+                        À emporter
+                    </button>
+                </div>
+                <div class="service-mode-content" id="deliveryPanel">
+                    <label for="deliveryAddress">Adresse ou postcode de livraison</label>
+                    <div class="delivery-search">
+                        <input id="deliveryAddress" type="text" placeholder="Ex: 06000 Nice ou votre adresse">
+                        <button type="button" id="checkDeliveryButton">Vérifier</button>
+                    </div>
+                    <p class="delivery-message" id="deliveryMessage">Entrez une adresse pour calculer la zone, les frais et le minimum de commande.</p>
+                    <div class="delivery-result" id="deliveryResult" hidden></div>
+                </div>
+                <div class="service-mode-content" id="pickupPanel" hidden>
+                    <div class="pickup-card">
+                        <p><i class="fa-solid fa-location-dot"></i><span id="restaurantAddress">Adresse du restaurant à confirmer</span></p>
+                        <p><i class="fa-solid fa-phone"></i><span id="restaurantPhone">Téléphone à confirmer</span></p>
+                        <p><i class="fa-solid fa-clock"></i><span>Horaires à confirmer auprès du restaurant</span></p>
+                    </div>
+                    <div class="pickup-actions">
+                        <a href="https://www.google.com/maps/search/?api=1&query=ZEN%20SUSHI%20WOK" target="_blank" rel="noopener">Voir l'itinéraire</a>
+                        <a href="https://www.google.com/maps/search/?api=1&query=ZEN%20SUSHI%20WOK" target="_blank" rel="noopener">Google Maps</a>
+                        <a href="tel:" id="restaurantCallLink">Appeler</a>
+                    </div>
+                </div>
+            </div>
+            <div class="home-actions">
+                <button type="button" onclick="scrollToMenu()">Voir le menu</button>
+                <a href="#combos">Découvrir les combos</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="home-rails" id="homeRails">
+        <div class="home-highlights" aria-label="Nos engagements">
+            <article class="highlight-item">
+                <span class="highlight-icon" aria-hidden="true"><i class="fa-solid fa-fish"></i></span>
+                <h3>Produits Frais</h3>
+                <p>La sélection rigoureuse de nos ingrédients garantit une qualité exceptionnelle à chaque bouchée</p>
+            </article>
+            <article class="highlight-item">
+                <span class="highlight-icon" aria-hidden="true"><i class="fa-solid fa-utensils"></i></span>
+                <h3>Maîtres Sushi</h3>
+                <p>Le savoir-faire de nos chefs transforme chaque plat en une véritable œuvre d'art culinaire</p>
+            </article>
+            <article class="highlight-item">
+                <span class="highlight-icon" aria-hidden="true"><i class="fa-solid fa-martini-glass-citrus"></i></span>
+                <h3>Boissons &amp; Saveurs</h3>
+                <p>Une large gamme de boissons rafraîchissantes, des thés traditionnels aux jus de fruits, pour satisfaire petits et grands</p>
+            </article>
+            <article class="highlight-item">
+                <span class="highlight-icon" aria-hidden="true"><i class="fa-solid fa-seedling"></i></span>
+                <h3>Cuisine Végétale</h3>
+                <p>Une fusion créative de saveurs végétales pour une expérience sushi saine et savoureuse</p>
+            </article>
+        </div>
+        <div class="section-heading">
+            <h2>À découvrir</h2>
+            <p>Ajoutez directement un plat au panier ou ouvrez sa fiche pour voir les détails.</p>
+        </div>
+        <div id="productRails"></div>
+    </section>
+
+    <main class="food-container" id="menuContent">
+        <h2 class="category-title" id="currentCategoryName"></h2>
+        <div class="food-grid" id="foodDisplay"></div>
+    </main>
+
+    <section class="single-section alt" id="combos">
+        <div class="section-heading">
+            <h2>Nouvelles offres</h2>
+            <p>Découvrez nos plateaux à partager et nos formules pensées pour les repas en famille ou entre amis.</p>
+        </div>
+        <div class="combo-grid">
+            <article class="combo-card">
+                <img src="menu/1.PLATEAU/sushi9.png" alt="Zen Love">
+                <div class="combo-body">
+                    <span class="tag">Nouveau</span>
+                    <h3>Zen Love</h3>
+                    <span class="price">46,00€</span>
+                </div>
+            </article>
+            <article class="combo-card">
+                <img src="menu/1.PLATEAU/sushi10.png" alt="Zen Dégustation">
+                <div class="combo-body">
+                    <span class="tag">Nouveau</span>
+                    <h3>Zen Dégustation</h3>
+                    <span class="price">52,00€</span>
+                </div>
+            </article>
+            <article class="combo-card">
+                <img src="menu/1.PLATEAU/sushi11.png" alt="Zen Family">
+                <div class="combo-body">
+                    <span class="tag">Nouveau</span>
+                    <h3>Zen Family</h3>
+                    <span class="price">70,00€</span>
+                </div>
+            </article>
+            <article class="combo-card">
+                <img src="menu/1.PLATEAU/sushi12.png" alt="Zen Kids Salmon">
+                <div class="combo-body">
+                    <span class="tag">Nouveau</span>
+                    <h3>Zen Kids Salmon</h3>
+                    <span class="price">10,00€</span>
+                </div>
+            </article>
+            <article class="combo-card">
+                <img src="menu/1.PLATEAU/sushi13.png" alt="Zen Kids Yakitori">
+                <div class="combo-body">
+                    <span class="tag">Nouveau</span>
+                    <h3>Zen Kids Yakitori</h3>
+                    <span class="price">10,00€</span>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    <section class="single-section" id="plats-signature">
+        <div class="section-heading">
+            <h2>Plats signature</h2>
+            <p>Une sélection de créations maison: crispy rolls, hot rolls, tartare rolls et recettes gourmandes.</p>
+        </div>
+        <div class="slider-wrap">
+            <button class="slider-button prev" type="button" onclick="scrollSignatureSlider(-1)" aria-label="Précédent">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <button class="slider-button next" type="button" onclick="scrollSignatureSlider(1)" aria-label="Suivant">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+            <div class="signature-slider" id="signatureSlider">
+                <article class="signature-card"><img src="menu/2. SIGNATURES/sig1.png" alt="Crispy Roll Saumon"><span>Crispy Roll Saumon Avocat Cheese</span></article>
+                <article class="signature-card"><img src="menu/2. SIGNATURES/sig2.png" alt="Crispy Roll Thon"><span>Crispy Roll Thon Avocat Cheese</span></article>
+                <article class="signature-card"><img src="menu/2. SIGNATURES/sig3.png" alt="Crispy Roll Poulet"><span>Crispy Roll Poulet Pané Avocat Cheese</span></article>
+                <article class="signature-card"><img src="menu/2. SIGNATURES/sig4.png" alt="Crispy Roll Crevettes"><span>Crispy Roll Crevettes Tempura Avocat Cheese</span></article>
+                <article class="signature-card"><img src="menu/2. SIGNATURES/sig5.png" alt="Hot Saumon Roll"><span>Hot Saumon Roll Avocat Concombre Cheese</span></article>
+                <article class="signature-card"><img src="menu/2. SIGNATURES/sig6.png" alt="Hot Thon Roll"><span>Hot Thon Roll Avocat Concombre Cheese</span></article>
+                <article class="signature-card"><img src="menu/2. SIGNATURES/sig7.png" alt="Tartare Roll Saumon"><span>Tartare Roll Saumon Avocat Concombre Cheese</span></article>
+                <article class="signature-card"><img src="menu/2. SIGNATURES/sig8.png" alt="Zen Roll Saumon"><span>Zen Roll Saumon Avocat Concombre Cheese</span></article>
+                <article class="signature-card"><img src="menu/2. SIGNATURES/sig9.png" alt="Dragon Roll"><span>Dragon Roll Crevettes Tempura Avocat Cheese</span></article>
+                <article class="signature-card"><img src="menu/2. SIGNATURES/sig10.png" alt="Crispy Onion Thon"><span>Crispy Onion Thon Cuit Avocat Concombre Spicy Sauce</span></article>
+                <article class="signature-card"><img src="menu/2. SIGNATURES/sig11.png" alt="Crispy Onion Foie Gras"><span>Crispy Onion Foie Gras Mangue Chutney Figue</span></article>
+                <article class="signature-card"><img src="menu/2. SIGNATURES/sig12.png" alt="Chicken Roll"><span>Chicken Roll Poulet Pané Avocat Cheddar Flambé Oignon Frit</span></article>
+                <article class="signature-card"><img src="menu/2. SIGNATURES/sig13.png" alt="Dip Salmon Roll"><span>Dip Salmon Roll Avocat Cheese</span></article>
+                <article class="signature-card"><img src="menu/2. SIGNATURES/sig14.png" alt="Dip Tuna Roll"><span>Dip Tuna Roll Avocat Cheese</span></article>
+                <article class="signature-card"><img src="menu/2. SIGNATURES/sig15.png" alt="Dip Shrimp Roll"><span>Dip Shrimp Roll Avocat Cheese</span></article>
+                <article class="signature-card"><img src="menu/2. SIGNATURES/sig16.png" alt="Dip Chicken Roll"><span>Dip Chicken Roll Avocat Cheese</span></article>
+            </div>
+        </div>
+    </section>
+
+    <section class="single-section alt" id="service">
+        <div class="social-top">
+            <div class="section-heading">
+                <h2>Retrouvez Zen Sushi Wok</h2>
+                <p>Suivez les nouveautés, les créations et les offres du restaurant sur nos réseaux sociaux.</p>
+            </div>
+            <div class="social-icons" aria-label="Réseaux sociaux">
+                <a href="https://www.instagram.com/zensushiwok/" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                <a href="https://www.facebook.com/zensushiwok" target="_blank" rel="noopener" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                <a href="https://youtube.com/@zensushiwok?si=p4I9uP7EUKrFqA6r" target="_blank" rel="noopener" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                <a href="https://www.tiktok.com/@zen_sushi_wok?is_from_webapp=1&sender_device=pc" target="_blank" rel="noopener" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+                <a href="mailto:zensushiwok06@gmail.com" aria-label="Email"><i class="fas fa-envelope"></i></a>
+            </div>
+        </div>
+        <div class="marquee-wrapper">
+            <div class="marquee-track" id="marqueeTrack">
+                <img class="marquee-img" src="menu/10. TEMAKI/temaki1.png" alt="Temaki 1">
+                <img class="marquee-img" src="menu/10. TEMAKI/temaki2.png" alt="Temaki 2">
+                <img class="marquee-img" src="menu/10. TEMAKI/temaki3.png" alt="Temaki 3">
+                <img class="marquee-img" src="menu/10. TEMAKI/temaki4.png" alt="Temaki 4">
+                <img class="marquee-img" src="menu/10. TEMAKI/temaki5.png" alt="Temaki 5">
+                <img class="marquee-img" src="menu/1.PLATEAU/sushi7.png" alt="Plateau sushi">
+                <img class="marquee-img" src="menu/1.PLATEAU/sushi2.png" alt="Plateau sushi saumon">
+                <img class="marquee-img" src="menu/11. SASHIMI/sashimi1.png" alt="Sashimi 1">
+                <img class="marquee-img" src="menu/11. SASHIMI/sashimi2.png" alt="Sashimi 2">
+                <img class="marquee-img" src="menu/11. SASHIMI/sashimi3.png" alt="Sashimi 3">
+                <img class="marquee-img" src="menu/11. SASHIMI/sashimi4.png" alt="Sashimi 4">
+                <img class="marquee-img" src="menu/11. SASHIMI/sashimi5.png" alt="Sashimi 5">
+            </div>
+        </div>
+    </section>
+
+    <section class="single-section reviews-section" id="avis">
+        <div class="section-heading">
+            <h2>Avis clients</h2>
+            <p><strong>4.9/5 sur Google</strong> - avis courts, frais et utiles pour commander vite.</p>
+        </div>
+        <div class="review-slider" id="reviewSlider">
+            <article class="review-card"><strong>★★★★★</strong><h3>Camille</h3><p>Très frais et livraison rapide.</p><span>Google</span></article>
+            <article class="review-card"><strong>★★★★★</strong><h3>Nicolas</h3><p>Les signatures sont excellentes.</p><span>Google</span></article>
+            <article class="review-card"><strong>★★★★★</strong><h3>Sophie</h3><p>Commande claire, portions généreuses.</p><span>Google</span></article>
+            <article class="review-card"><strong>★★★★★</strong><h3>Mehdi</h3><p>Wok chaud, sushi bien préparés.</p><span>Google</span></article>
+            <article class="review-card"><strong>★★★★★</strong><h3>Laura</h3><p>Très bon rapport qualité prix.</p><span>Google</span></article>
+        </div>
+    </section>
+
+    <div class="dish-modal" id="dishModal" aria-hidden="true">
+        <div class="modal-backdrop" data-close-modal></div>
+        <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalDishName">
+            <button class="modal-close" type="button" data-close-modal aria-label="Fermer">&times;</button>
+            <div class="modal-grid">
+                <div class="modal-image" id="modalImage"></div>
+                <div class="modal-content">
+                    <h2 class="modal-title" id="modalDishName"></h2>
+                    <div class="modal-meta">
+                        <span class="food-pieces" id="modalPieces"></span>
+                        <strong class="food-price" id="modalPrice"></strong>
+                    </div>
+                    <div class="detail-block">
+                        <h3>Description</h3>
+                        <p id="modalDescription"></p>
+                    </div>
+                    <div class="detail-block">
+                        <h3>Composition</h3>
+                        <p id="modalComposition"></p>
+                    </div>
+                    <div class="detail-block">
+                        <h3>Allergènes</h3>
+                        <ul class="allergen-list" id="modalAllergenes"></ul>
+                    </div>
+                    <div id="modalOptionsBlock">
+                        <div class="options-title">Options</div>
+                        <div class="option-list">
+                            <label><input type="checkbox" value="Sans sésame"> Sans sésame</label>
+                            <label><input type="checkbox" value="Supplément sauce"> Supplément sauce</label>
+                        </div>
+                    </div>
+                    <button class="modal-add" type="button" id="modalAddButton">Ajouter au panier</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="toast" id="cartToast" role="status" aria-live="polite"></div>
+
+    <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+        <div class="cart-drawer-backdrop" data-close-cart></div>
+        <section class="cart-panel" aria-label="Panier">
+            <header class="cart-panel-header">
+                <div>
+                    <span>Votre commande</span>
+                    <strong id="cartPanelTotal">0,00€</strong>
+                </div>
+                <button type="button" data-close-cart aria-label="Fermer le panier">&times;</button>
+            </header>
+            <div class="cart-panel-body">
+                <div class="cart-items" id="cartItems"></div>
+                <section class="cart-accessories">
+                    <h3>Sauces & accessoires</h3>
+                    <p id="accessoryQuotaText">Quota gratuit selon le total des plats.</p>
+                    <div id="accessoryItems"></div>
+                </section>
+                <section class="cart-service-summary" id="cartServiceSummary"></section>
+            </div>
+            <footer class="cart-panel-footer">
+                <div class="cart-total-row"><span>Plats</span><strong id="cartFoodTotal">0,00€</strong></div>
+                <div class="cart-total-row"><span>Accessoires</span><strong id="cartAccessoryTotal">0,00€</strong></div>
+                <div class="cart-total-row"><span>Livraison</span><strong id="cartDeliveryFee">0,00€</strong></div>
+                <div class="cart-total-row grand"><span>Total</span><strong id="cartGrandTotal">0,00€</strong></div>
+                <p class="checkout-message" id="checkoutMessage"></p>
+                <button class="checkout-main-button" type="button" id="validateCartButton">Commander</button>
+                <button class="cart-clear-link" type="button" id="clearCartButton">Vider le panier</button>
+            </footer>
+        </section>
+    </aside>
+
+    <footer class="site-footer" id="contact">
+        <div class="footer-inner">
+            <div class="footer-info">
+                <div class="footer-brand">
+                    <img src="avatar.jpeg" alt="Zen Sushi Wok">
+                    <h2>Bienvenue chez Zen Sushi Wok</h2>
+                </div>
+                <div class="footer-copy">
+                    <p>Nous vous invitons à découvrir le meilleur de la cuisine japonaise et asiatique à La Trinité.</p>
+                    <p>Sushis frais, plats wok savoureux et recettes préparées à la commande avec des ingrédients de qualité.</p>
+                    <p>Sur place, à emporter ou en livraison, profitez d'une expérience gourmande et d'un service rapide au quotidien.</p>
+                </div>
+                <div class="footer-details">
+                    <p class="footer-detail">
+                        <i class="fa-solid fa-map-location-dot" aria-hidden="true"></i>
+                        <span>108 BD du Général de Gaulle - 06340 La Trinité - France</span>
+                    </p>
+                    <p class="footer-detail">
+                        <i class="fa-solid fa-envelope-open-text" aria-hidden="true"></i>
+                        <span>Email: <a href="mailto:zensushiwok06@gmail.com">zensushiwok06@gmail.com</a></span>
+                    </p>
+                    <p class="footer-detail">
+                        <i class="fa-solid fa-clock" aria-hidden="true"></i>
+                        <span>Horaires d'ouverture : 11h30 - 14h30 et 18h00 - 22h00 (du mardi au dimanche)</span>
+                    </p>
+                </div>
+                <div class="footer-socials" aria-label="Réseaux sociaux">
+                    <a class="facebook" href="https://www.facebook.com/zensushiwok" target="_blank" rel="noopener" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                    <a class="instagram" href="https://www.instagram.com/zensushiwok/" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a class="youtube" href="https://youtube.com/@zensushiwok?si=p4I9uP7EUKrFqA6r" target="_blank" rel="noopener" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                    <a href="https://www.tiktok.com/@zen_sushi_wok?is_from_webapp=1&sender_device=pc" target="_blank" rel="noopener" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+                </div>
+            </div>
+            <div class="footer-map">
+                <iframe
+                    title="Carte Zen Sushi Wok"
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade"
+                    src="https://www.google.com/maps?q=Zen%20Sushi%20Wok%20108%20Bd%20du%20G%C3%A9n%C3%A9ral%20de%20Gaulle%2006340%20La%20Trinit%C3%A9%20France&output=embed">
+                </iframe>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 All Rights Reserved</p>
+            <p>Designed by Hoangcaster</p>
+        </div>
+    </footer>
+
+    <script src="menu-data.js"></script>
+    <script src="menu-page.js"></script>
+    <script>
+        function scrollSignatureSlider(direction) {
+            const slider = document.getElementById("signatureSlider");
+            slider.scrollLeft += direction * 320;
+        }
+
+        const track = document.getElementById("marqueeTrack");
+        if (track) {
+            track.innerHTML += track.innerHTML;
+        }
+    </script>
+</body>
+</html>
