@@ -562,6 +562,10 @@ body.header-compact .logo {
     background: #090909;
 }
 
+.drink-card .img-box {
+    background: #f7f7f7;
+}
+
 .img-box.loading::before {
     position: absolute;
     inset: 0;
@@ -577,12 +581,21 @@ body.header-compact .logo {
     transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
+.drink-card img {
+    padding: 10px;
+    object-fit: contain;
+}
+
 .food-card img.is-loaded {
     opacity: 1;
 }
 
 .image-trigger:hover img {
     transform: scale(1.03);
+}
+
+.drink-card .image-trigger:hover img {
+    transform: none;
 }
 
 .placeholder-art {
@@ -791,7 +804,16 @@ body.header-compact .logo {
     background: #090909;
 }
 
+.drink-modal .modal-image {
+    background: #f7f7f7;
+}
+
 .wine-modal .modal-image img {
+    object-fit: contain;
+}
+
+.drink-modal .modal-image img {
+    padding: 18px;
     object-fit: contain;
 }
 

@@ -471,7 +471,11 @@ function renderFoods(category, titleLabel = category, filter = "") {
 
     items.forEach((item, index) => {
         const card = document.createElement("article");
-        card.className = category === "VINS" ? "food-card wine-card" : "food-card";
+        card.className = [
+            "food-card",
+            category === "VINS" ? "wine-card" : "",
+            category === "BOISSON" ? "drink-card" : ""
+        ].filter(Boolean).join(" ");
         const sources = getMenuImageSources(folderName, item.fileName);
         const isPriorityImage = index < 4;
         const pieces = item.pieces || "";
@@ -529,6 +533,7 @@ function openDishModal(item, category) {
     modalAllergenes.innerHTML = inferAllergenes(item).map((label) => `<li>${escapeHtml(label)}</li>`).join("");
     modalOptionsBlock.style.display = isDrinkCategory(category) ? "none" : "block";
     modal.classList.toggle("wine-modal", category === "VINS");
+    modal.classList.toggle("drink-modal", category === "BOISSON");
 
     if (sources) {
         modalImage.innerHTML = `<img src="${sources.optimized}" data-fallback-src="${sources.original}" alt="${escapeHtml(item.name)}">`;
