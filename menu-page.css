@@ -1014,6 +1014,12 @@ body.header-compact .logo {
     object-fit: contain;
 }
 
+.custom-option-copy {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
 .custom-qty {
     min-width: 102px;
 }
@@ -1653,7 +1659,7 @@ body.header-compact .logo {
     .modal-content {
         max-height: none;
         overflow: visible;
-        padding: 22px 16px 26px;
+        padding: 22px 16px 0;
     }
 
     .modal-title {
@@ -1672,6 +1678,19 @@ body.header-compact .logo {
         min-height: 54px;
     }
 
+    .modal-cart-action {
+        margin-inline: -16px;
+        padding: 10px 16px calc(14px + env(safe-area-inset-bottom));
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0), #ffffff 22%, #ffffff 100%);
+        box-shadow: 0 -10px 24px rgba(255, 255, 255, 0.92);
+    }
+
+    .custom-option-list-scroll {
+        max-height: none;
+        overflow: visible;
+        padding-right: 0;
+    }
+
     .custom-option-row {
         grid-template-columns: 1fr;
         align-items: stretch;
@@ -1680,6 +1699,43 @@ body.header-compact .logo {
     .custom-qty {
         width: 100%;
         min-width: 0;
+    }
+
+    .drink-choice-row {
+        grid-template-columns: minmax(0, 1fr) 102px;
+        gap: 8px;
+        align-items: center;
+        min-height: 66px;
+        padding: 8px;
+    }
+
+    .drink-choice-row .custom-option-main {
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .drink-choice-row .custom-option-media {
+        flex-basis: 46px;
+        width: 46px;
+        height: 46px;
+    }
+
+    .drink-choice-row .custom-option-copy strong {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .drink-choice-row .custom-qty {
+        justify-self: end;
+        width: 102px;
+        min-width: 102px;
+        min-height: 38px;
+        grid-template-columns: 34px 34px 34px;
+    }
+
+    .custom-total {
+        text-align: left;
     }
 
     .choice-grid {

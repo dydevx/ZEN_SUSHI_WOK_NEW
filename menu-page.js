@@ -940,7 +940,7 @@ function renderModalOptions() {
                         <span class="custom-option-media">
                             ${sources ? `<img src="${sources.original}" alt="${escapeHtml(drink.name)}">` : `<i class="fa-solid fa-glass-water"></i>`}
                         </span>
-                        <span>
+                        <span class="custom-option-copy">
                             <strong>${escapeHtml(drink.name)}</strong>
                             <span>${qty > 0 && drinkCount <= 1 ? "Inclus" : formatPrice(drink.price)}</span>
                         </span>
