@@ -2,6 +2,7 @@ const categories = window.ZEN_MENU_CATEGORIES || [];
 const menuData = window.ZEN_MENU_DATA || {};
 const categoryFolders = window.ZEN_CATEGORY_FOLDERS || {};
 const menuGroups = normalizeMenuGroups(window.ZEN_MENU_GROUPS, categories);
+const categoryIntros = window.ZEN_CATEGORY_INTROS || {};
 
 const nav = document.getElementById("mainNav");
 const display = document.getElementById("foodDisplay");
@@ -67,6 +68,29 @@ const ACCESSORIES = [
     { id: "wasabi", label: "Wasabi", quota: "wasabi" },
     { id: "gingembre", label: "Gingembre", quota: "gingembre" }
 ];
+const FRESH_BOWL_SUPPLEMENTS = [
+    { id: "saumon", label: "Saumon", price: 4 },
+    { id: "thon", label: "Thon", price: 6 },
+    { id: "avocat", label: "Avocat", price: 2 },
+    { id: "cheese", label: "Cheese", price: 2 },
+    { id: "tofu-frit", label: "Tofu frit", price: 2 },
+    { id: "tempura-crevettes", label: "Tempura crevettes", price: 2.5, unit: "/ pièce" },
+    { id: "poulet-pane", label: "Poulet pané", price: 3 },
+    { id: "boulettes-poulet", label: "Boulettes de poulet", price: 2.5, unit: "/ pièce" },
+    { id: "legumes", label: "Légumes", price: 2 }
+];
+const KIDS_EXTRA_DRINK_PRICE = 2.5;
+const ZEN_WOK_VEGETABLES = [
+    { id: "brocoli", label: "Brocoli" },
+    { id: "champignons-paris", label: "Champignons de Paris" },
+    { id: "germes-soja", label: "Germes de soja" },
+    { id: "poireaux", label: "Poireaux" },
+    { id: "courgettes", label: "Courgettes" },
+    { id: "carottes", label: "Carottes" },
+    { id: "oignons", label: "Oignons" }
+];
+const ZEN_WOK_SAUCES = ["Soja du chef", "Tamarin", "Saté", "Piquante", "Aigre-douce", "Curry au lait de coco"];
+const ZEN_WOK_SIDES = ["Riz nature", "Nouille chinois", "Udon (nouille japonais)"];
 
 let activeDish = null;
 let activeCategory = "";
@@ -75,9 +99,12 @@ let serviceMode = localStorage.getItem("zenServiceMode") || "delivery";
 let deliveryInfo = readJson("zenDeliveryInfo", null);
 let cart = readJson("zenCartItems", []);
 let accessories = readJson("zenAccessories", {});
+let savedCustomizations = readJson("zenSavedCustomizations", {});
 let selectedGroupItems = new Map();
+let modalCustomization = null;
+let modalEditingEntryId = "";
 
-cart = cart.filter((entry) => entry && entry.id && entry.item && entry.qty > 0);
+cart = cart.filter((entry) => entry && entry.id && entry.item && entry.qty > 0).map(normalizeCartEntry);
 syncAccessoryDefaults();
 renderGroupNav();
 renderHomeRails();
@@ -151,17 +178,38 @@ function getDishId(category, item) {
     return `${category}::${item.fileName || item.name}`;
 }
 
+function normalizeCartEntry(entry) {
+    const category = entry.category || findCategoryForItem(entry.item);
+    const baseId = entry.baseId || getDishId(category, entry.item);
+    return {
+        ...entry,
+        category,
+        baseId,
+        qty: Math.max(0, Number(entry.qty) || 0),
+        customization: entry.customization || null
+    };
+}
+
+function getEntryBaseId(entry) {
+    return entry.baseId || getDishId(entry.category, entry.item);
+}
+
 function getCartEntry(category, item) {
-    const id = getDishId(category, item);
-    return cart.find((entry) => entry.id === id);
+    const baseId = getDishId(category, item);
+    return cart.find((entry) => getEntryBaseId(entry) === baseId);
 }
 
 function getCartQty(category, item) {
-    const entry = getCartEntry(category, item);
-    return entry ? entry.qty : 0;
+    const baseId = getDishId(category, item);
+    return cart.reduce((sum, entry) => sum + (getEntryBaseId(entry) === baseId ? entry.qty : 0), 0);
 }
 
 function setCartQty(category, item, qty) {
+    if (needsCustomization(category, item)) {
+        setCustomBaseQty(category, item, qty);
+        return;
+    }
+
     const id = getDishId(category, item);
     const nextQty = Math.max(0, Number(qty) || 0);
     const existing = cart.find((entry) => entry.id === id);
@@ -171,7 +219,7 @@ function setCartQty(category, item, qty) {
     } else if (existing) {
         existing.qty = nextQty;
     } else {
-        cart.push({ id, category, item, qty: nextQty });
+        cart.push({ id, baseId: id, category, item, qty: nextQty, customization: null });
     }
 
     writeJson("zenCartItems", cart);
@@ -180,6 +228,14 @@ function setCartQty(category, item, qty) {
 }
 
 function addToCart(item, category = activeCategory || findCategoryForItem(item)) {
+    if (needsCustomization(category, item)) {
+        const customization = modal.classList.contains("open") && activeDish === item && activeCategory === category
+            ? modalCustomization
+            : getSavedCustomization(category, item);
+        addConfiguredDishToCart(item, category, customization);
+        return;
+    }
+
     setCartQty(category, item, getCartQty(category, item) + 1);
     showToast(`${item.name} ajouté au panier`);
 }
@@ -189,11 +245,302 @@ function findCategoryForItem(item) {
 }
 
 function getFoodTotal() {
-    return cart.reduce((sum, entry) => sum + parsePrice(entry.item.price) * entry.qty, 0);
+    return cart.reduce((sum, entry) => sum + getEntryUnitPrice(entry) * entry.qty, 0);
 }
 
 function getItemCount() {
     return cart.reduce((sum, entry) => sum + entry.qty, 0);
+}
+
+function isFreshBowlCategory(category) {
+    return category === "CHIRASHI" || category === "POKE BOWL";
+}
+
+function isKidsMenu(item) {
+    return /menu enfant/i.test(item.pieces || "") || /^Zen Kids/i.test(item.name || "");
+}
+
+function needsCustomization(category, item) {
+    return isFreshBowlCategory(category) || category === "ZEN WOK" || isKidsMenu(item);
+}
+
+function cloneCustomization(customization) {
+    return customization ? JSON.parse(JSON.stringify(customization)) : null;
+}
+
+function getSavedCustomization(category, item) {
+    const baseId = getDishId(category, item);
+    return normalizeCustomization(category, item, savedCustomizations[baseId]);
+}
+
+function saveCustomization(category, item, customization) {
+    if (!needsCustomization(category, item)) return;
+    const baseId = getDishId(category, item);
+    savedCustomizations[baseId] = normalizeCustomization(category, item, customization);
+    writeJson("zenSavedCustomizations", savedCustomizations);
+}
+
+function normalizeCustomization(category, item, customization = null) {
+    if (!needsCustomization(category, item)) return null;
+
+    if (isFreshBowlCategory(category)) {
+        const source = customization && customization.type === "fresh-supplements" ? customization.supplements || {} : {};
+        return {
+            type: "fresh-supplements",
+            supplements: FRESH_BOWL_SUPPLEMENTS.reduce((acc, supplement) => {
+                acc[supplement.id] = Math.max(0, Number(source[supplement.id]) || 0);
+                return acc;
+            }, {})
+        };
+    }
+
+    if (isKidsMenu(item)) {
+        const source = customization && customization.type === "kids-drinks" ? customization.drinks || {} : {};
+        const drinks = getKidsDrinkOptions().reduce((acc, drink) => {
+            acc[getDrinkChoiceId(drink)] = Math.max(0, Number(source[getDrinkChoiceId(drink)]) || 0);
+            return acc;
+        }, {});
+        if (!Object.values(drinks).some((qty) => qty > 0)) {
+            const defaultDrink = getDefaultKidsDrink();
+            if (defaultDrink) drinks[getDrinkChoiceId(defaultDrink)] = 1;
+        }
+        return { type: "kids-drinks", drinks };
+    }
+
+    const source = customization && customization.type === "zen-wok" ? customization : {};
+    const vegetableIds = new Set(Array.isArray(source.vegetables) && source.vegetables.length
+        ? source.vegetables
+        : ZEN_WOK_VEGETABLES.map((vegetable) => vegetable.id));
+    const sauce = ZEN_WOK_SAUCES.includes(source.sauce) ? source.sauce : ZEN_WOK_SAUCES[0];
+    const side = ZEN_WOK_SIDES.includes(source.side) ? source.side : ZEN_WOK_SIDES[0];
+
+    return {
+        type: "zen-wok",
+        vegetables: ZEN_WOK_VEGETABLES.filter((vegetable) => vegetableIds.has(vegetable.id)).map((vegetable) => vegetable.id),
+        sauce,
+        side
+    };
+}
+
+function getKidsDrinkOptions() {
+    return (menuData["BOISSON"] || []).filter((item) => !/bière|biere/i.test(item.name) && parsePrice(item.price) <= 3.5);
+}
+
+function getDefaultKidsDrink() {
+    const drinks = getKidsDrinkOptions();
+    return drinks.find((item) => /^Coca-Cola$/i.test(item.name)) || drinks[0] || null;
+}
+
+function getDrinkChoiceId(item) {
+    return item.fileName || slugify(item.name);
+}
+
+function getDrinkChoiceById(id) {
+    return getKidsDrinkOptions().find((item) => getDrinkChoiceId(item) === id);
+}
+
+function getSupplementById(id) {
+    return FRESH_BOWL_SUPPLEMENTS.find((supplement) => supplement.id === id);
+}
+
+function getCustomizationCost(customization) {
+    if (!customization) return 0;
+
+    if (customization.type === "fresh-supplements") {
+        return Object.entries(customization.supplements || {}).reduce((sum, [id, qty]) => {
+            const supplement = getSupplementById(id);
+            return sum + (supplement ? supplement.price * qty : 0);
+        }, 0);
+    }
+
+    if (customization.type === "kids-drinks") {
+        const drinkCount = Object.values(customization.drinks || {}).reduce((sum, qty) => sum + qty, 0);
+        return Math.max(0, drinkCount - 1) * KIDS_EXTRA_DRINK_PRICE;
+    }
+
+    return 0;
+}
+
+function getEntryUnitPrice(entry) {
+    return parsePrice(entry.item.price) + getCustomizationCost(entry.customization);
+}
+
+function getCustomizationKey(category, item, customization) {
+    const normalized = normalizeCustomization(category, item, customization);
+    if (!normalized) return "standard";
+
+    if (normalized.type === "fresh-supplements") {
+        const selected = FRESH_BOWL_SUPPLEMENTS
+            .map((supplement) => [supplement.id, normalized.supplements[supplement.id] || 0])
+            .filter(([, qty]) => qty > 0)
+            .map(([id, qty]) => `${id}-${qty}`);
+        return `fresh-${selected.length ? selected.join("_") : "none"}`;
+    }
+
+    if (normalized.type === "kids-drinks") {
+        const selected = Object.entries(normalized.drinks || {})
+            .filter(([, qty]) => qty > 0)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([id, qty]) => `${slugify(id)}-${qty}`);
+        return `kids-${selected.join("_")}`;
+    }
+
+    const vegetables = ZEN_WOK_VEGETABLES
+        .filter((vegetable) => normalized.vegetables.includes(vegetable.id))
+        .map((vegetable) => vegetable.id)
+        .join("-");
+    return `wok-${vegetables || "sans-legumes"}-${slugify(normalized.sauce)}-${slugify(normalized.side)}`;
+}
+
+function makeCartEntryId(category, item, customization) {
+    const baseId = getDishId(category, item);
+    return needsCustomization(category, item) ? `${baseId}::${getCustomizationKey(category, item, customization)}` : baseId;
+}
+
+function getConfiguredCartQty(category, item, customization) {
+    const id = makeCartEntryId(category, item, customization);
+    const entry = cart.find((cartEntry) => cartEntry.id === id);
+    return entry ? entry.qty : 0;
+}
+
+function addConfiguredDishToCart(item, category, customization, qty = 1) {
+    const normalized = normalizeCustomization(category, item, customization);
+    const baseId = getDishId(category, item);
+    const id = makeCartEntryId(category, item, normalized);
+    const existing = cart.find((entry) => entry.id === id);
+
+    if (existing) {
+        existing.qty += qty;
+    } else {
+        cart.push({ id, baseId, category, item, qty, customization: cloneCustomization(normalized) });
+    }
+
+    saveCustomization(category, item, normalized);
+    writeJson("zenCartItems", cart);
+    syncAccessoryDefaults();
+    updateCart();
+    showToast(`${item.name} ajouté au panier`);
+}
+
+function updateConfiguredCartEntry(entryId, category, item, customization) {
+    const entry = cart.find((cartEntry) => cartEntry.id === entryId);
+    if (!entry) {
+        addConfiguredDishToCart(item, category, customization);
+        return;
+    }
+
+    const normalized = normalizeCustomization(category, item, customization);
+    const nextId = makeCartEntryId(category, item, normalized);
+    const duplicate = cart.find((cartEntry) => cartEntry.id === nextId && cartEntry.id !== entryId);
+
+    if (duplicate) {
+        duplicate.qty += entry.qty;
+        cart = cart.filter((cartEntry) => cartEntry.id !== entryId);
+        modalEditingEntryId = duplicate.id;
+    } else {
+        entry.id = nextId;
+        entry.baseId = getDishId(category, item);
+        entry.customization = cloneCustomization(normalized);
+        modalEditingEntryId = nextId;
+    }
+
+    saveCustomization(category, item, normalized);
+    writeJson("zenCartItems", cart);
+    syncAccessoryDefaults();
+    updateCart();
+    showToast(`${item.name} modifié`);
+}
+
+function setCartEntryQty(entryId, qty) {
+    const nextQty = Math.max(0, Number(qty) || 0);
+    const entry = cart.find((cartEntry) => cartEntry.id === entryId);
+    if (!entry) return;
+
+    if (!nextQty) {
+        cart = cart.filter((cartEntry) => cartEntry.id !== entryId);
+    } else {
+        entry.qty = nextQty;
+    }
+
+    writeJson("zenCartItems", cart);
+    syncAccessoryDefaults();
+    updateCart();
+}
+
+function decrementCartBaseItem(category, item) {
+    const baseId = getDishId(category, item);
+    const entry = [...cart].reverse().find((cartEntry) => getEntryBaseId(cartEntry) === baseId);
+    if (entry) setCartEntryQty(entry.id, entry.qty - 1);
+}
+
+function decrementConfiguredCartItem(category, item, customization) {
+    const id = makeCartEntryId(category, item, customization);
+    const entry = cart.find((cartEntry) => cartEntry.id === id);
+    if (entry) setCartEntryQty(entry.id, entry.qty - 1);
+}
+
+function setCustomBaseQty(category, item, qty) {
+    const baseId = getDishId(category, item);
+    const targetQty = Math.max(0, Number(qty) || 0);
+    const currentQty = getCartQty(category, item);
+
+    if (targetQty > currentQty) {
+        addConfiguredDishToCart(item, category, getSavedCustomization(category, item), targetQty - currentQty);
+        return;
+    }
+
+    let toRemove = currentQty - targetQty;
+    for (let index = cart.length - 1; index >= 0 && toRemove > 0; index -= 1) {
+        const entry = cart[index];
+        if (getEntryBaseId(entry) !== baseId) continue;
+        const removed = Math.min(entry.qty, toRemove);
+        entry.qty -= removed;
+        toRemove -= removed;
+    }
+
+    cart = cart.filter((entry) => entry.qty > 0);
+    writeJson("zenCartItems", cart);
+    syncAccessoryDefaults();
+    updateCart();
+}
+
+function getCustomizationSummary(customization) {
+    if (!customization) return [];
+
+    if (customization.type === "fresh-supplements") {
+        const selected = FRESH_BOWL_SUPPLEMENTS
+            .filter((supplement) => (customization.supplements || {})[supplement.id] > 0)
+            .map((supplement) => `${supplement.label} x${customization.supplements[supplement.id]}`);
+        return selected.length ? [`Suppléments: ${selected.join(", ")}`] : [];
+    }
+
+    if (customization.type === "kids-drinks") {
+        const selected = Object.entries(customization.drinks || {})
+            .filter(([, qty]) => qty > 0)
+            .map(([id, qty]) => {
+                const drink = getDrinkChoiceById(id);
+                return `${drink ? drink.name : id} x${qty}`;
+            });
+        const total = Object.values(customization.drinks || {}).reduce((sum, qty) => sum + qty, 0);
+        const paid = Math.max(0, total - 1);
+        return [
+            `Choix de boisson: ${selected.join(", ")}`,
+            paid ? `Boisson supplémentaire: ${formatMoney(paid * KIDS_EXTRA_DRINK_PRICE)}` : "1 boisson incluse"
+        ];
+    }
+
+    if (customization.type === "zen-wok") {
+        const vegetables = ZEN_WOK_VEGETABLES
+            .filter((vegetable) => customization.vegetables.includes(vegetable.id))
+            .map((vegetable) => vegetable.label);
+        return [
+            `Légumes: ${vegetables.length ? vegetables.join(", ") : "sans légumes"}`,
+            `Sauce: ${customization.sauce}`,
+            `Accompagnement: ${customization.side}`
+        ];
+    }
+
+    return [];
 }
 
 function getAccessoryQuota() {
@@ -267,14 +614,16 @@ function renderCartItems() {
         <article class="cart-line">
             <div>
                 <strong>${escapeHtml(entry.item.name)}</strong>
-                <span>${formatMoney(parsePrice(entry.item.price))} / unité</span>
+                <span>${formatMoney(getEntryUnitPrice(entry))} / unité</span>
+                ${getCustomizationSummary(entry.customization).map((line) => `<span class="cart-option-line">${escapeHtml(line)}</span>`).join("")}
+                ${entry.customization ? `<button class="cart-edit-button" type="button" data-edit-cart="${escapeHtml(entry.id)}">Modifier</button>` : ""}
             </div>
             <div class="qty-control compact">
                 <button type="button" data-cart-dec="${escapeHtml(entry.id)}">-</button>
                 <span>${entry.qty}</span>
                 <button type="button" data-cart-inc="${escapeHtml(entry.id)}">+</button>
             </div>
-            <strong>${formatMoney(parsePrice(entry.item.price) * entry.qty)}</strong>
+            <strong>${formatMoney(getEntryUnitPrice(entry) * entry.qty)}</strong>
         </article>
     `).join("");
 }
@@ -344,19 +693,14 @@ function updateCheckoutMessage() {
 
 function updateVisibleQuantityControls() {
     document.querySelectorAll("[data-qty-for]").forEach((element) => {
-        const [category, fileName] = element.dataset.qtyFor.split("::");
-        const item = (menuData[category] || []).find((dish) => dish.fileName === fileName);
-        if (!item) return;
-        const qty = getCartQty(category, item);
-        element.innerHTML = qty ? quantityMarkup(category, item, qty) : addButtonMarkup(category, item);
+        const found = findDishById(element.dataset.qtyFor);
+        if (!found) return;
+        const qty = getCartQty(found.category, found.item);
+        element.innerHTML = qty ? quantityMarkup(found.category, found.item, qty) : addButtonMarkup(found.category, found.item);
     });
 
     if (activeDish && activeCategory) {
-        const qty = getCartQty(activeCategory, activeDish);
-        const modalAction = document.getElementById("modalAddButton");
-        if (modalAction) {
-            modalAction.outerHTML = `<div class="modal-cart-action" id="modalAddButton">${qty ? quantityMarkup(activeCategory, activeDish, qty) : addButtonMarkup(activeCategory, activeDish, "Ajouter au panier")}</div>`;
-        }
+        updateModalPriceAndAction();
     }
 }
 
@@ -468,6 +812,17 @@ function renderFoods(category, titleLabel = category, filter = "") {
     const folderName = categoryFolders[category];
     const items = getCategoryItems(category, filter);
     const fragment = document.createDocumentFragment();
+    const intro = categoryIntros[category];
+
+    if (intro && !filter) {
+        const introCard = document.createElement("article");
+        introCard.className = "category-intro-card";
+        introCard.innerHTML = `
+            <strong>${escapeHtml(intro.title)}</strong>
+            <p>${escapeHtml(intro.text)}</p>
+        `;
+        fragment.appendChild(introCard);
+    }
 
     items.forEach((item, index) => {
         const card = document.createElement("article");
@@ -501,7 +856,7 @@ function renderFoods(category, titleLabel = category, filter = "") {
                         ${pieces ? `<span class="food-pieces">${escapeHtml(pieces)}</span>` : "<span></span>"}
                         <strong class="food-price">${escapeHtml(formatPrice(item.price))}</strong>
                     </div>
-                    <div data-qty-for="${escapeHtml(category)}::${escapeHtml(item.fileName)}">
+                    <div data-qty-for="${escapeHtml(getDishId(category, item))}">
                         ${getCartQty(category, item) ? quantityMarkup(category, item, getCartQty(category, item)) : addButtonMarkup(category, item)}
                     </div>
                 </div>
@@ -518,22 +873,220 @@ function renderFoods(category, titleLabel = category, filter = "") {
     display.appendChild(fragment);
 }
 
-function openDishModal(item, category) {
+function renderDefaultOptions() {
+    return `
+        <div class="options-title">Options</div>
+        <div class="option-list">
+            <label><input type="checkbox" value="Sans sésame"> Sans sésame</label>
+            <label><input type="checkbox" value="Supplément sauce"> Supplément sauce</label>
+        </div>
+    `;
+}
+
+function renderModalOptions() {
+    if (!activeDish || isDrinkCategory(activeCategory)) {
+        modalOptionsBlock.innerHTML = "";
+        modalOptionsBlock.style.display = "none";
+        return;
+    }
+
+    modalOptionsBlock.style.display = "block";
+
+    if (!needsCustomization(activeCategory, activeDish)) {
+        modalOptionsBlock.innerHTML = renderDefaultOptions();
+        return;
+    }
+
+    if (modalCustomization.type === "fresh-supplements") {
+        const rows = FRESH_BOWL_SUPPLEMENTS.map((supplement) => {
+            const qty = modalCustomization.supplements[supplement.id] || 0;
+            return `
+                <article class="custom-option-row">
+                    <div>
+                        <strong>${escapeHtml(supplement.label)}</strong>
+                        <span>+${formatMoney(supplement.price)} ${supplement.unit || ""}</span>
+                    </div>
+                    <div class="qty-control compact custom-qty">
+                        <button type="button" data-custom-dec="supplement::${supplement.id}">-</button>
+                        <span>${qty}</span>
+                        <button type="button" data-custom-inc="supplement::${supplement.id}">+</button>
+                    </div>
+                </article>
+            `;
+        }).join("");
+
+        modalOptionsBlock.innerHTML = `
+            <section class="custom-section">
+                <div class="options-title">Suppléments</div>
+                <p class="custom-help">Ajoutez autant de suppléments que souhaité. Le total du plat se met à jour automatiquement.</p>
+                <div class="custom-option-list">${rows}</div>
+                <strong class="custom-total">Total suppléments: ${formatMoney(getCustomizationCost(modalCustomization))}</strong>
+            </section>
+        `;
+        return;
+    }
+
+    if (modalCustomization.type === "kids-drinks") {
+        const drinks = getKidsDrinkOptions();
+        const drinkCount = Object.values(modalCustomization.drinks || {}).reduce((sum, qty) => sum + qty, 0);
+        const paid = Math.max(0, drinkCount - 1);
+        const rows = drinks.map((drink) => {
+            const id = getDrinkChoiceId(drink);
+            const qty = modalCustomization.drinks[id] || 0;
+            const sources = getMenuImageSources(categoryFolders["BOISSON"], drink.fileName);
+            return `
+                <article class="custom-option-row drink-choice-row">
+                    <div class="custom-option-main">
+                        <span class="custom-option-media">
+                            ${sources ? `<img src="${sources.original}" alt="${escapeHtml(drink.name)}">` : `<i class="fa-solid fa-glass-water"></i>`}
+                        </span>
+                        <span>
+                            <strong>${escapeHtml(drink.name)}</strong>
+                            <span>${qty > 0 && drinkCount <= 1 ? "Inclus" : formatPrice(drink.price)}</span>
+                        </span>
+                    </div>
+                    <div class="qty-control compact custom-qty">
+                        <button type="button" data-custom-dec="drink::${escapeHtml(id)}">-</button>
+                        <span>${qty}</span>
+                        <button type="button" data-custom-inc="drink::${escapeHtml(id)}">+</button>
+                    </div>
+                </article>
+            `;
+        }).join("");
+
+        modalOptionsBlock.innerHTML = `
+            <section class="custom-section">
+                <div class="options-title">Choix de boisson</div>
+                <p class="custom-help">1 soft inclus. Au-delà: +${formatMoney(KIDS_EXTRA_DRINK_PRICE)} par boisson supplémentaire.</p>
+                <div class="custom-option-list custom-option-list-scroll">${rows}</div>
+                <strong class="custom-total">${paid ? `Supplément boissons: ${formatMoney(paid * KIDS_EXTRA_DRINK_PRICE)}` : "1 boisson offerte incluse"}</strong>
+            </section>
+        `;
+        return;
+    }
+
+    const vegetableChoices = ZEN_WOK_VEGETABLES.map((vegetable) => `
+        <label class="choice-card">
+            <input type="checkbox" data-wok-veg="${vegetable.id}" ${modalCustomization.vegetables.includes(vegetable.id) ? "checked" : ""}>
+            <span>${escapeHtml(vegetable.label)}</span>
+        </label>
+    `).join("");
+    const sauceChoices = ZEN_WOK_SAUCES.map((sauce) => `
+        <label class="choice-card">
+            <input type="radio" name="wokSauce" data-wok-sauce="${escapeHtml(sauce)}" ${modalCustomization.sauce === sauce ? "checked" : ""}>
+            <span>${escapeHtml(sauce)}</span>
+        </label>
+    `).join("");
+    const sideChoices = ZEN_WOK_SIDES.map((side) => `
+        <label class="choice-card">
+            <input type="radio" name="wokSide" data-wok-side="${escapeHtml(side)}" ${modalCustomization.side === side ? "checked" : ""}>
+            <span>${escapeHtml(side)}</span>
+        </label>
+    `).join("");
+
+    modalOptionsBlock.innerHTML = `
+        <section class="custom-section">
+            <div class="options-title">Choix des légumes</div>
+            <p class="custom-help">Les 7 légumes sont sélectionnés par défaut. Décochez uniquement ceux à retirer.</p>
+            <div class="choice-grid">${vegetableChoices}</div>
+            <div class="options-title custom-subtitle">Choix de sauce</div>
+            <div class="choice-grid">${sauceChoices}</div>
+            <div class="options-title custom-subtitle">Accompagnement</div>
+            <div class="choice-grid">${sideChoices}</div>
+        </section>
+    `;
+}
+
+function updateCustomizationQuantity(rawKey, delta) {
+    if (!modalCustomization || !rawKey) return;
+    const [type, id] = rawKey.split("::");
+
+    if (type === "supplement" && modalCustomization.type === "fresh-supplements") {
+        modalCustomization.supplements[id] = Math.max(0, (modalCustomization.supplements[id] || 0) + delta);
+    }
+
+    if (type === "drink" && modalCustomization.type === "kids-drinks") {
+        const current = modalCustomization.drinks[id] || 0;
+        const next = Math.max(0, current + delta);
+        const currentTotal = Object.values(modalCustomization.drinks || {}).reduce((sum, qty) => sum + qty, 0);
+        if (currentTotal - current + next < 1) return;
+        modalCustomization.drinks[id] = next;
+    }
+
+    modalCustomization = normalizeCustomization(activeCategory, activeDish, modalCustomization);
+    renderModalOptions();
+    updateModalPriceAndAction();
+}
+
+function updateWokCustomization(target) {
+    if (!modalCustomization || modalCustomization.type !== "zen-wok") return;
+
+    if (target.matches("[data-wok-veg]")) {
+        const selected = new Set(modalCustomization.vegetables);
+        if (target.checked) selected.add(target.dataset.wokVeg);
+        else selected.delete(target.dataset.wokVeg);
+        modalCustomization.vegetables = ZEN_WOK_VEGETABLES
+            .filter((vegetable) => selected.has(vegetable.id))
+            .map((vegetable) => vegetable.id);
+    }
+
+    if (target.matches("[data-wok-sauce]") && target.checked) {
+        modalCustomization.sauce = target.dataset.wokSauce;
+    }
+
+    if (target.matches("[data-wok-side]") && target.checked) {
+        modalCustomization.side = target.dataset.wokSide;
+    }
+
+    modalCustomization = normalizeCustomization(activeCategory, activeDish, modalCustomization);
+    updateModalPriceAndAction();
+}
+
+function updateModalPriceAndAction() {
+    const modalAction = document.getElementById("modalAddButton");
+    if (!modalAction || !activeDish || !activeCategory) return;
+
+    const isCustom = needsCustomization(activeCategory, activeDish);
+    const normalized = isCustom ? normalizeCustomization(activeCategory, activeDish, modalCustomization) : null;
+    if (isCustom) modalCustomization = normalized;
+    const unitPrice = parsePrice(activeDish.price) + getCustomizationCost(normalized);
+    modalPrice.textContent = isCustom ? formatMoney(unitPrice) : formatPrice(activeDish.price);
+
+    let actionMarkup = "";
+    if (isCustom && modalEditingEntryId) {
+        actionMarkup = `<button class="add-btn" type="button" data-add-item="${escapeHtml(getDishId(activeCategory, activeDish))}">Mettre à jour - ${formatMoney(unitPrice)}</button>`;
+    } else if (isCustom) {
+        const qty = getConfiguredCartQty(activeCategory, activeDish, normalized);
+        actionMarkup = qty
+            ? quantityMarkup(activeCategory, activeDish, qty)
+            : addButtonMarkup(activeCategory, activeDish, `Ajouter au panier - ${formatMoney(unitPrice)}`);
+    } else {
+        const qty = getCartQty(activeCategory, activeDish);
+        actionMarkup = qty ? quantityMarkup(activeCategory, activeDish, qty) : addButtonMarkup(activeCategory, activeDish, "Ajouter au panier");
+    }
+
+    modalAction.outerHTML = `<div class="modal-cart-action" id="modalAddButton">${actionMarkup}</div>`;
+}
+
+function openDishModal(item, category, cartEntry = null) {
     const folderName = categoryFolders[category];
     const sources = getMenuImageSources(folderName, item.fileName);
     activeDish = item;
     activeCategory = category;
+    modalEditingEntryId = cartEntry ? cartEntry.id : "";
+    modalCustomization = needsCustomization(category, item)
+        ? normalizeCustomization(category, item, cartEntry ? cartEntry.customization : getSavedCustomization(category, item))
+        : null;
 
     modalDishName.textContent = item.name;
     modalPieces.textContent = item.pieces || "";
     modalPieces.style.display = item.pieces ? "inline-flex" : "none";
-    modalPrice.textContent = formatPrice(item.price);
     modalDescription.textContent = item.description || item.composition || "Détails à confirmer auprès du restaurant.";
     modalComposition.textContent = item.composition || "Composition à confirmer auprès du restaurant.";
     modalAllergenes.innerHTML = inferAllergenes(item).map((label) => `<li>${escapeHtml(label)}</li>`).join("");
-    modalOptionsBlock.style.display = isDrinkCategory(category) ? "none" : "block";
     modal.classList.toggle("wine-modal", category === "VINS");
     modal.classList.toggle("drink-modal", category === "BOISSON");
+    modal.classList.toggle("custom-modal", needsCustomization(category, item));
 
     if (sources) {
         modalImage.innerHTML = `<img src="${sources.optimized}" data-fallback-src="${sources.original}" alt="${escapeHtml(item.name)}">`;
@@ -542,8 +1095,8 @@ function openDishModal(item, category) {
         modalImage.innerHTML = makePlaceholder(item.name);
     }
 
-    const qty = getCartQty(category, item);
-    document.getElementById("modalAddButton").outerHTML = `<div class="modal-cart-action" id="modalAddButton">${qty ? quantityMarkup(category, item, qty) : addButtonMarkup(category, item, "Ajouter au panier")}</div>`;
+    renderModalOptions();
+    updateModalPriceAndAction();
     modal.classList.add("open");
     modal.setAttribute("aria-hidden", "false");
     document.body.classList.add("modal-open");
@@ -554,6 +1107,8 @@ function closeDishModal() {
     modal.setAttribute("aria-hidden", "true");
     document.body.classList.remove("modal-open");
     activeDish = null;
+    modalCustomization = null;
+    modalEditingEntryId = "";
 }
 
 function setActiveGroup(groupButton) {
@@ -756,8 +1311,8 @@ function startRailAutoScroll(track) {
 }
 
 function findDishById(id) {
-    const [category, fileName] = id.split("::");
-    const item = (menuData[category] || []).find((dish) => dish.fileName === fileName || dish.name === fileName);
+    const [category, itemKey] = String(id || "").split("::");
+    const item = (menuData[category] || []).find((dish) => dish.fileName === itemKey || dish.name === itemKey);
     return item ? { category, item } : null;
 }
 
@@ -827,8 +1382,10 @@ function closeCart() {
 function clearCart() {
     cart = [];
     accessories = {};
+    savedCustomizations = {};
     writeJson("zenCartItems", cart);
     writeJson("zenAccessories", accessories);
+    writeJson("zenSavedCustomizations", savedCustomizations);
     syncAccessoryDefaults();
     updateCart();
 }
@@ -840,28 +1397,68 @@ document.addEventListener("click", (event) => {
     const openButton = event.target.closest("[data-open-item]");
     const cartIncButton = event.target.closest("[data-cart-inc]");
     const cartDecButton = event.target.closest("[data-cart-dec]");
+    const editCartButton = event.target.closest("[data-edit-cart]");
     const accessoryIncButton = event.target.closest("[data-accessory-inc]");
     const accessoryDecButton = event.target.closest("[data-accessory-dec]");
+    const customIncButton = event.target.closest("[data-custom-inc]");
+    const customDecButton = event.target.closest("[data-custom-dec]");
     const railNext = event.target.closest("[data-rail-next]");
     const railPrev = event.target.closest("[data-rail-prev]");
 
+    if (customIncButton || customDecButton) {
+        updateCustomizationQuantity((customIncButton || customDecButton).dataset.customInc || (customIncButton || customDecButton).dataset.customDec, customIncButton ? 1 : -1);
+        return;
+    }
+
     if (addButton || incButton || decButton || openButton) {
-        const id = (addButton || incButton || decButton || openButton).dataset.addItem
-            || (addButton || incButton || decButton || openButton).dataset.incItem
-            || (addButton || incButton || decButton || openButton).dataset.decItem
-            || (addButton || incButton || decButton || openButton).dataset.openItem;
+        const actionButton = addButton || incButton || decButton || openButton;
+        const id = actionButton.dataset.addItem
+            || actionButton.dataset.incItem
+            || actionButton.dataset.decItem
+            || actionButton.dataset.openItem;
         const found = findDishById(id);
         if (!found) return;
-        if (openButton) openDishModal(found.item, found.category);
+        const modalAction = modal.classList.contains("open") && modal.contains(actionButton);
+        const customItem = needsCustomization(found.category, found.item);
+
+        if (openButton) {
+            openDishModal(found.item, found.category);
+            return;
+        }
+
+        if ((addButton || incButton) && customItem && !modalAction) {
+            openDishModal(found.item, found.category);
+            return;
+        }
+
+        if ((addButton || incButton) && customItem && modalAction) {
+            if (modalEditingEntryId && addButton) updateConfiguredCartEntry(modalEditingEntryId, found.category, found.item, modalCustomization);
+            else addConfiguredDishToCart(found.item, found.category, modalCustomization);
+            return;
+        }
+
+        if (decButton && customItem && modalAction) {
+            decrementConfiguredCartItem(found.category, found.item, modalCustomization);
+            return;
+        }
+
         if (addButton || incButton) addToCart(found.item, found.category);
-        if (decButton) setCartQty(found.category, found.item, getCartQty(found.category, found.item) - 1);
+        if (decButton) {
+            if (customItem) decrementCartBaseItem(found.category, found.item);
+            else setCartQty(found.category, found.item, getCartQty(found.category, found.item) - 1);
+        }
     }
 
     if (cartIncButton || cartDecButton) {
         const id = (cartIncButton || cartDecButton).dataset.cartInc || (cartIncButton || cartDecButton).dataset.cartDec;
         const entry = cart.find((item) => item.id === id);
         if (!entry) return;
-        setCartQty(entry.category, entry.item, entry.qty + (cartIncButton ? 1 : -1));
+        setCartEntryQty(entry.id, entry.qty + (cartIncButton ? 1 : -1));
+    }
+
+    if (editCartButton) {
+        const entry = cart.find((cartEntry) => cartEntry.id === editCartButton.dataset.editCart);
+        if (entry) openDishModal(entry.item, entry.category, entry);
     }
 
     if (accessoryIncButton || accessoryDecButton) {
@@ -875,6 +1472,12 @@ document.addEventListener("click", (event) => {
         const index = (railNext || railPrev).dataset.railNext || (railNext || railPrev).dataset.railPrev;
         const track = document.querySelector(`[data-rail-track="${index}"]`);
         if (track) track.scrollBy({ left: railNext ? 320 : -320, behavior: "smooth" });
+    }
+});
+
+document.addEventListener("change", (event) => {
+    if (event.target.matches("[data-wok-veg], [data-wok-sauce], [data-wok-side]")) {
+        updateWokCustomization(event.target);
     }
 });
 

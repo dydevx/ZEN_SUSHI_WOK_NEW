@@ -111,6 +111,12 @@ window.ZEN_CATEGORY_FOLDERS = {
     "BOISSON": "19. BOISSON",
     "VINS": "20. VIN"
 };
+window.ZEN_CATEGORY_INTROS = {
+    "ZEN WOK": {
+        "title": "Jardin Asiatique du Chef",
+        "text": "Poêlée de légumes frais (brocoli, champignons de Paris, germes de soja, poivrons, poireaux, carottes, oignons), préparée à la minute et personnalisable selon vos envies."
+    }
+};
 window.ZEN_MENU_DATA = {
     "PLATEAU": [
         {
@@ -279,7 +285,7 @@ window.ZEN_MENU_DATA = {
             "name": "Zen Roll",
             "price": "12",
             "pieces": "8 pièces",
-            "composition": "Saumon, cheese, concombre, recouvert d’avocat, oignons frits et sauce maison.",
+            "composition": "Saumon, cheese, concombre, recouvert d’avocat et sauce maison.",
             "description": "Un équilibre parfait entre fondant, croquant et fraîcheur.",
             "fileName": "sig8.png"
         },
@@ -287,7 +293,7 @@ window.ZEN_MENU_DATA = {
             "name": "Dragon Roll",
             "price": "13",
             "pieces": "8 pièces",
-            "composition": "Crevettes tempura, cheese, recouvert d’avocat, oignons frits et sauce maison.",
+            "composition": "Crevettes tempura, cheese, recouvert d’avocat et sauce maison.",
             "description": "Un classique revisité, alliant croustillant et onctuosité dans une composition généreuse.",
             "fileName": "sig9.png"
         },
@@ -319,7 +325,7 @@ window.ZEN_MENU_DATA = {
             "name": "Dip Saumon Roll",
             "price": "12",
             "pieces": "8 pièces",
-            "composition": "Saumon, avocat, cheese, enrobé de panko, oignons frits, sauce maison.",
+            "composition": "Saumon, avocat, cheese, enrobé de panko, sauce maison.",
             "description": "Une version généreuse et croustillante pour les amateurs de saumon.",
             "fileName": "sig13.png"
         },
@@ -327,7 +333,7 @@ window.ZEN_MENU_DATA = {
             "name": "Dip Tuna Roll",
             "price": "13",
             "pieces": "8 pièces",
-            "composition": "Thon, avocat, cheese, enrobé de panko, oignons frits, sauce maison.",
+            "composition": "Thon, avocat, cheese, enrobé de panko, sauce maison.",
             "description": "Un roll intense et savoureux, à la texture parfaitement équilibrée.",
             "fileName": "sig14.png"
         },
@@ -335,7 +341,7 @@ window.ZEN_MENU_DATA = {
             "name": "Dip Shrimp Roll",
             "price": "12",
             "pieces": "8 pièces",
-            "composition": "Crevettes, avocat, cheese, enrobé de panko, oignons frits, sauce maison.",
+            "composition": "Crevettes, avocat, cheese, enrobé de panko, sauce maison.",
             "description": "Une combinaison gourmande entre la douceur des crevettes et un croustillant irrésistible.",
             "fileName": "sig15.png"
         },
@@ -343,7 +349,7 @@ window.ZEN_MENU_DATA = {
             "name": "Dip Chicken Roll",
             "price": "12",
             "pieces": "8 pièces",
-            "composition": "Poulet pané, avocat, cheese, enrobé de panko, oignons frits, sauce maison.",
+            "composition": "Poulet pané, avocat, cheese, enrobé de panko, sauce maison.",
             "description": "Un roll généreux et croustillant, parfait pour les amateurs de saveurs réconfortantes.",
             "fileName": "sig16.png"
         }
@@ -1396,6 +1402,30 @@ window.ZEN_MENU_DATA = {
             "composition": "Crevettes",
             "description": "Crevettes sautées et pâtes de riz délicatement assaisonnées, pour une touche gourmande et savoureuse",
             "fileName": "bun9.png"
+        },
+        {
+            "name": "Pad Thai Seiches",
+            "price": "13",
+            "pieces": "",
+            "composition": "Seiches",
+            "description": "Nouilles de riz sautées à la sauce tamarin, accompagnées de tendres seiches, pousses de soja, cébettes, tofu, cacahuètes concassées et citron.",
+            "fileName": ""
+        },
+        {
+            "name": "Pad Thai Crevettes & Seiches",
+            "price": "14",
+            "pieces": "",
+            "composition": "Crevettes & Seiches",
+            "description": "Authentique Pad Thai aux crevettes et seiches, préparé avec des nouilles de riz sautées, tofu, pousses de soja, cébettes, cacahuètes grillées et une touche de citron.",
+            "fileName": ""
+        },
+        {
+            "name": "Pad Thai Tofu",
+            "price": "12",
+            "pieces": "",
+            "composition": "Tofu",
+            "description": "Nouilles de riz sautées au tofu doré, avec pousses de soja, cébettes, cacahuètes croquantes et sauce Pad Thai maison légèrement sucrée et acidulée, une touche de citron.",
+            "fileName": ""
         }
     ],
     "ZEN WOK": [
@@ -1436,15 +1466,15 @@ window.ZEN_MENU_DATA = {
             "price": "12",
             "pieces": "",
             "composition": "Crevettes & Seiches",
-            "description": "Un mélange gourmand de fruits de mer sauté au wok.",
+            "description": "Un duo de fruits de mer sauté au wok, généreux et parfumé.",
             "fileName": "nouilles5.png"
         },
         {
-            "name": "Wok Canard à l’Ananas",
+            "name": "Wok Canard",
             "price": "12",
             "pieces": "",
-            "composition": "Canard à l’Ananas",
-            "description": "Canard savoureux et ananas pour une touche sucrée-salée.",
+            "composition": "Canard",
+            "description": "Canard savoureux dans un style sucré-salé généreux.",
             "fileName": "nouilles6.png"
         },
         {
@@ -1454,62 +1484,6 @@ window.ZEN_MENU_DATA = {
             "composition": "Tofu",
             "description": "Tofu sauté et légumes frais, pour une version végétale.",
             "fileName": "nouilles7.png"
-        },
-        {
-            "name": "Wok Udon Poulet",
-            "price": "10",
-            "pieces": "",
-            "composition": "Poulet",
-            "description": "Udon sautés au poulet et légumes croquants.",
-            "fileName": "nouilles8.png"
-        },
-        {
-            "name": "Wok Udon Bœuf",
-            "price": "11",
-            "pieces": "",
-            "composition": "Bœuf",
-            "description": "Udon accompagnés de bœuf tendre et légumes frais.",
-            "fileName": "nouilles9.png"
-        },
-        {
-            "name": "Wok Udon Crevettes",
-            "price": "11",
-            "pieces": "",
-            "composition": "Crevettes",
-            "description": "Crevettes sautées et udon pour une combinaison gourmande.",
-            "fileName": "nouilles10.png"
-        },
-        {
-            "name": "Wok Udon Seiches",
-            "price": "11",
-            "pieces": "",
-            "composition": "Seiches",
-            "description": "Seiches et udon pour une texture fondante.",
-            "fileName": "nouilles11.png"
-        },
-        {
-            "name": "Wok Udon Crevettes & Seiches",
-            "price": "12",
-            "pieces": "",
-            "composition": "Crevettes & Seiches",
-            "description": "Un mélange généreux de fruits de mer et udon.",
-            "fileName": "nouilles12.png"
-        },
-        {
-            "name": "Wok Udon Canard à l’Ananas",
-            "price": "12",
-            "pieces": "",
-            "composition": "Canard à l’Ananas",
-            "description": "Canard et ananas pour un équilibre sucré-salé.",
-            "fileName": "nouilles13.png"
-        },
-        {
-            "name": "Wok Udon Tofu",
-            "price": "10",
-            "pieces": "",
-            "composition": "Tofu",
-            "description": "Udon et tofu sauté, pour une alternative végétale.",
-            "fileName": "nouilles14.png"
         }
     ],
     "ENTRÉES & ACCOMPAGNEMENTS": [
@@ -1910,6 +1884,14 @@ window.ZEN_MENU_DATA = {
             "fileName": "boisson15.png"
         },
         {
+            "name": "Minute Maid Pomme",
+            "price": "2,5",
+            "pieces": "",
+            "composition": "Minute Maid Pomme 33 cl",
+            "description": "Jus de pomme frais et fruité, servi bien frais.",
+            "fileName": "boisson19.png"
+        },
+        {
             "name": "Bière Asahi",
             "price": "4,5",
             "pieces": "",
@@ -1924,6 +1906,14 @@ window.ZEN_MENU_DATA = {
             "composition": "Bière Tsingtao",
             "description": "Bière chinoise douce et équilibrée.",
             "fileName": "boisson18.png"
+        },
+        {
+            "name": "Bière Corona Extra",
+            "price": "4,5",
+            "pieces": "",
+            "composition": "Bière Corona Extra",
+            "description": "Bière blonde légère, fraîche et désaltérante.",
+            "fileName": "boisson20.png"
         }
     ],
     "VINS": [
