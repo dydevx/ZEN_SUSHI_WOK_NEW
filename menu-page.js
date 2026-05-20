@@ -77,26 +77,7 @@ const ACCESSORIES = [
     { id: "wasabi", label: "Wasabi", quota: "wasabi" },
     { id: "gingembre", label: "Gingembre", quota: "gingembre" }
 ];
-const SUSHI_ACCESSORY_CATEGORIES = new Set([
-    "PLATEAU",
-    "SIGNATURES",
-    "CALIFORNIA",
-    "MAKI",
-    "SPRING ROLL",
-    "FLOCON",
-    "SAUMON ROLL",
-    "SUSHI",
-    "GUNKAN",
-    "TEMAKI",
-    "SASHIMI",
-    "CHIRASHI"
-]);
-const BAGUETTE_ONLY_CATEGORIES = new Set([
-    "POKE BOWL",
-    "CRUSTY BOWL",
-    "ZEN ENERGY BOWL",
-    "ZEN WOK"
-]);
+const ACCESSORY_EXCLUDED_CATEGORIES = new Set(["BOISSON", "VINS", "DESSERT"]);
 const FRESH_BOWL_SUPPLEMENTS = [
     { id: "saumon", label: "Saumon", price: 4 },
     { id: "thon", label: "Thon", price: 6 },
@@ -667,48 +648,34 @@ function getCustomizationSummary(customization) {
     return [];
 }
 
-function isSushiAccessoryCategory(category) {
-    return SUSHI_ACCESSORY_CATEGORIES.has(category);
-}
-
-function isBaguetteOnlyCategory(category) {
-    return BAGUETTE_ONLY_CATEGORIES.has(category);
+function isAccessoryEligibleCategory(category) {
+    return !ACCESSORY_EXCLUDED_CATEGORIES.has(category);
 }
 
 function getAccessoryBase() {
     return cart.reduce((base, entry) => {
+        if (!isAccessoryEligibleCategory(entry.category)) return base;
         const lineTotal = getEntryUnitPrice(entry) * entry.qty;
-        if (isSushiAccessoryCategory(entry.category)) {
-            base.sushiTotal += lineTotal;
-            base.sushiQty += entry.qty;
-        } else if (isBaguetteOnlyCategory(entry.category)) {
-            base.baguetteOnlyTotal += lineTotal;
-            base.baguetteOnlyQty += entry.qty;
-        }
+        base.eligibleTotal += lineTotal;
+        base.eligibleQty += entry.qty;
         return base;
-    }, { sushiTotal: 0, sushiQty: 0, baguetteOnlyTotal: 0, baguetteOnlyQty: 0 });
+    }, { eligibleTotal: 0, eligibleQty: 0 });
 }
 
 function getAccessoryQuota() {
     const base = getAccessoryBase();
-    const sushiQuota = Math.floor(base.sushiTotal / 10);
-    const baguetteOnlyQuota = Math.floor(base.baguetteOnlyTotal / 10);
+    const quota = Math.floor(base.eligibleTotal / 15);
     return {
-        sauce: sushiQuota,
-        baguettes: sushiQuota + baguetteOnlyQuota,
-        wasabi: sushiQuota,
-        gingembre: sushiQuota,
-        hasSushi: base.sushiQty > 0,
-        hasBaguetteOnly: base.baguetteOnlyQty > 0
+        sauce: quota,
+        baguettes: quota,
+        wasabi: quota,
+        gingembre: quota,
+        hasEligibleItems: base.eligibleQty > 0
     };
 }
 
 function getAvailableAccessories(quota = getAccessoryQuota()) {
-    if (!quota.hasSushi && !quota.hasBaguetteOnly) return [];
-    return ACCESSORIES.filter((accessory) => {
-        if (accessory.id === "baguettes") return quota.hasSushi || quota.hasBaguetteOnly;
-        return quota.hasSushi;
-    });
+    return quota.hasEligibleItems ? ACCESSORIES : [];
 }
 
 function getDefaultAccessoryQty(accessory, quota) {
@@ -745,7 +712,7 @@ function getAccessoryFreeQty(accessory, quota, sauceQty) {
 function getAccessoryOverage() {
     const quota = getAccessoryQuota();
     const availableAccessories = getAvailableAccessories(quota);
-    const sauceQty = quota.hasSushi ? (accessories["soy-salty"] || 0) + (accessories["soy-sweet"] || 0) : 0;
+    const sauceQty = quota.hasEligibleItems ? (accessories["soy-salty"] || 0) + (accessories["soy-sweet"] || 0) : 0;
     return availableAccessories.reduce((sum, accessory) => {
         const qty = accessories[accessory.id] || 0;
         const free = getAccessoryFreeQty(accessory, quota, sauceQty);
@@ -821,15 +788,13 @@ function renderAccessories() {
     }
 
     cartAccessoriesSection.hidden = false;
-    const sauceQty = quota.hasSushi ? (accessories["soy-salty"] || 0) + (accessories["soy-sweet"] || 0) : 0;
+    const sauceQty = quota.hasEligibleItems ? (accessories["soy-salty"] || 0) + (accessories["soy-sweet"] || 0) : 0;
     const quotaNotes = [];
-    if (quota.hasSushi) {
-        quotaNotes.push(`${quota.sauce} sauce(s), ${quota.wasabi} wasabi, ${quota.gingembre} gingembre`);
-    }
-    if (quota.hasSushi || quota.hasBaguetteOnly) {
-        quotaNotes.unshift(`${quota.baguettes} baguette(s)`);
-    }
-    accessoryQuotaText.textContent = `Quota gratuit: ${quotaNotes.join(", ")}. Sauces uniquement pour les sushi; bowls chauds et poke bowl: baguettes seulement.`;
+    quotaNotes.push(`${quota.baguettes} paire(s) de baguettes`);
+    quotaNotes.push(`${quota.sauce} sauce soja au choix`);
+    quotaNotes.push(`${quota.wasabi} wasabi`);
+    quotaNotes.push(`${quota.gingembre} gingembre`);
+    accessoryQuotaText.textContent = `Quota gratuit: ${quotaNotes.join(", ")}. 1 quota offert par tranche de 15€ de plats.`;
     accessoryItems.innerHTML = availableAccessories.map((accessory) => {
         const qty = accessories[accessory.id] || 0;
         const free = getAccessoryFreeQty(accessory, quota, sauceQty);
@@ -912,7 +877,7 @@ function getOrderReference() {
 function getSelectedAccessoryLines() {
     const quota = getAccessoryQuota();
     const availableAccessories = getAvailableAccessories(quota);
-    const sauceQty = quota.hasSushi ? (accessories["soy-salty"] || 0) + (accessories["soy-sweet"] || 0) : 0;
+    const sauceQty = quota.hasEligibleItems ? (accessories["soy-salty"] || 0) + (accessories["soy-sweet"] || 0) : 0;
     return availableAccessories
         .map((accessory) => {
             const qty = accessories[accessory.id] || 0;
