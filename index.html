@@ -208,7 +208,10 @@
         .combo-card img {
             width: 100%;
             aspect-ratio: 4 / 3;
-            object-fit: cover;
+            padding: 6px;
+            background: #050505;
+            object-fit: contain;
+            object-position: center;
         }
 
         .combo-body {
@@ -883,6 +886,17 @@
                     <p id="accessoryQuotaText">Quota gratuit selon le total des plats.</p>
                     <div id="accessoryItems"></div>
                 </section>
+                <section class="cart-customer-form" id="cartCustomerForm">
+                    <h3>Informations client</h3>
+                    <label for="customerName">Nom</label>
+                    <input id="customerName" type="text" autocomplete="name" placeholder="Nom du client">
+                    <label for="customerPhone">Telephone</label>
+                    <input id="customerPhone" type="tel" autocomplete="tel" placeholder="+33 ...">
+                    <label for="customerAddress">Adresse</label>
+                    <input id="customerAddress" type="text" autocomplete="street-address" placeholder="Adresse de livraison ou retrait">
+                    <label for="customerEmail">Email</label>
+                    <input id="customerEmail" type="email" autocomplete="email" placeholder="email@exemple.com">
+                </section>
                 <section class="cart-service-summary" id="cartServiceSummary"></section>
             </div>
             <footer class="cart-panel-footer">
@@ -891,7 +905,8 @@
                 <div class="cart-total-row"><span>Livraison</span><strong id="cartDeliveryFee">0,00€</strong></div>
                 <div class="cart-total-row grand"><span>Total</span><strong id="cartGrandTotal">0,00€</strong></div>
                 <p class="checkout-message" id="checkoutMessage"></p>
-                <button class="checkout-main-button" type="button" id="validateCartButton">Commander</button>
+                <button class="invoice-secondary-button" type="button" id="invoiceButton">Créer la facture PDF</button>
+                <button class="checkout-main-button" type="button" id="validateCartButton">Ouvrir WhatsApp</button>
                 <button class="cart-clear-link" type="button" id="clearCartButton">Vider le panier</button>
             </footer>
         </section>

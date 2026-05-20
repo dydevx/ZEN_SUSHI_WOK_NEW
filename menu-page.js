@@ -15,8 +15,10 @@ const checkoutButton = document.getElementById("checkoutButton");
 const cartButton = document.getElementById("cartButton");
 const clearCartButton = document.getElementById("clearCartButton");
 const validateCartButton = document.getElementById("validateCartButton");
+const invoiceButton = document.getElementById("invoiceButton");
 const cartDrawer = document.getElementById("cartDrawer");
 const cartItems = document.getElementById("cartItems");
+const cartAccessoriesSection = document.querySelector(".cart-accessories");
 const accessoryItems = document.getElementById("accessoryItems");
 const accessoryQuotaText = document.getElementById("accessoryQuotaText");
 const cartPanelTotal = document.getElementById("cartPanelTotal");
@@ -26,6 +28,10 @@ const cartDeliveryFee = document.getElementById("cartDeliveryFee");
 const cartGrandTotal = document.getElementById("cartGrandTotal");
 const cartServiceSummary = document.getElementById("cartServiceSummary");
 const checkoutMessage = document.getElementById("checkoutMessage");
+const customerNameInput = document.getElementById("customerName");
+const customerPhoneInput = document.getElementById("customerPhone");
+const customerAddressInput = document.getElementById("customerAddress");
+const customerEmailInput = document.getElementById("customerEmail");
 const modal = document.getElementById("dishModal");
 const modalImage = document.getElementById("modalImage");
 const modalDishName = document.getElementById("modalDishName");
@@ -54,6 +60,9 @@ selectedSubnav.hidden = true;
 groupSubnav.insertAdjacentElement("afterend", selectedSubnav);
 const mobileMenuQuery = window.matchMedia("(max-width: 760px)");
 
+const WHATSAPP_ORDER_PHONE = "33763652285";
+const CUSTOMER_INFO_KEY = "zenCustomerInfo";
+const CHECKOUT_READY_MESSAGE = "Commande prete a envoyer sur WhatsApp.";
 const DELIVERY_ZONES = [
     { max: 1.99, fee: 0, minimum: 15, eta: "25-35 min" },
     { max: 2.99, fee: 2, minimum: 25, eta: "30-40 min" },
@@ -68,6 +77,26 @@ const ACCESSORIES = [
     { id: "wasabi", label: "Wasabi", quota: "wasabi" },
     { id: "gingembre", label: "Gingembre", quota: "gingembre" }
 ];
+const SUSHI_ACCESSORY_CATEGORIES = new Set([
+    "PLATEAU",
+    "SIGNATURES",
+    "CALIFORNIA",
+    "MAKI",
+    "SPRING ROLL",
+    "FLOCON",
+    "SAUMON ROLL",
+    "SUSHI",
+    "GUNKAN",
+    "TEMAKI",
+    "SASHIMI",
+    "CHIRASHI"
+]);
+const BAGUETTE_ONLY_CATEGORIES = new Set([
+    "POKE BOWL",
+    "CRUSTY BOWL",
+    "ZEN ENERGY BOWL",
+    "ZEN WOK"
+]);
 const FRESH_BOWL_SUPPLEMENTS = [
     { id: "saumon", label: "Saumon", price: 4 },
     { id: "thon", label: "Thon", price: 6 },
@@ -91,6 +120,15 @@ const ZEN_WOK_VEGETABLES = [
 ];
 const ZEN_WOK_SAUCES = ["Soja du chef", "Tamarin", "Saté", "Piquante", "Aigre-douce", "Curry au lait de coco"];
 const ZEN_WOK_SIDES = ["Riz nature", "Nouille chinois", "Udon (nouille japonais)"];
+const ZEN_WOK_SUPPLEMENTS = [
+    { id: "boeuf", label: "Bœuf", price: 3 },
+    { id: "poulet", label: "Poulet", price: 3 },
+    { id: "canard", label: "Canard", price: 3 },
+    { id: "crevettes", label: "Crevettes", price: 4 },
+    { id: "calamars", label: "Calamars", price: 4 },
+    { id: "tofu", label: "Tofu", price: 2 },
+    { id: "legumes", label: "Légumes", price: 2 }
+];
 
 let activeDish = null;
 let activeCategory = "";
@@ -103,8 +141,10 @@ let savedCustomizations = readJson("zenSavedCustomizations", {});
 let selectedGroupItems = new Map();
 let modalCustomization = null;
 let modalEditingEntryId = "";
+let currentOrderReference = "";
 
 cart = cart.filter((entry) => entry && entry.id && entry.item && entry.qty > 0).map(normalizeCartEntry);
+initCustomerFields();
 syncAccessoryDefaults();
 renderGroupNav();
 renderHomeRails();
@@ -125,6 +165,65 @@ function writeJson(key, value) {
         localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
         // Local previews can run with storage disabled.
+    }
+}
+
+function getInputValue(input) {
+    return input ? input.value.trim() : "";
+}
+
+function getCustomerInfo() {
+    return {
+        name: getInputValue(customerNameInput),
+        phone: getInputValue(customerPhoneInput),
+        address: getInputValue(customerAddressInput) || (deliveryInfo && deliveryInfo.address) || "",
+        email: getInputValue(customerEmailInput)
+    };
+}
+
+function saveCustomerInfo() {
+    const info = getCustomerInfo();
+    writeJson(CUSTOMER_INFO_KEY, info);
+    return info;
+}
+
+function initCustomerFields() {
+    const stored = readJson(CUSTOMER_INFO_KEY, {});
+    const savedAddress = stored.address || (deliveryInfo && deliveryInfo.address) || "";
+    if (customerNameInput) customerNameInput.value = stored.name || "";
+    if (customerPhoneInput) customerPhoneInput.value = stored.phone || "";
+    if (customerAddressInput) customerAddressInput.value = savedAddress;
+    if (customerEmailInput) customerEmailInput.value = stored.email || "";
+    if (deliveryAddress && savedAddress) deliveryAddress.value = savedAddress;
+
+    [customerNameInput, customerPhoneInput, customerAddressInput, customerEmailInput]
+        .filter(Boolean)
+        .forEach((input) => {
+            input.addEventListener("input", () => {
+                if (input === customerAddressInput && deliveryAddress) {
+                    deliveryAddress.value = customerAddressInput.value;
+                    if (deliveryInfo && deliveryInfo.address !== customerAddressInput.value.trim()) {
+                        deliveryInfo = null;
+                        writeJson("zenDeliveryInfo", deliveryInfo);
+                        if (deliveryResult) deliveryResult.hidden = true;
+                    }
+                }
+                saveCustomerInfo();
+                updateCart();
+            });
+        });
+
+    if (deliveryAddress) {
+        deliveryAddress.addEventListener("input", () => {
+            if (customerAddressInput) customerAddressInput.value = deliveryAddress.value;
+            if (deliveryInfo && deliveryInfo.address !== deliveryAddress.value.trim()) {
+                deliveryInfo = null;
+                writeJson("zenDeliveryInfo", deliveryInfo);
+                if (deliveryResult) deliveryResult.hidden = true;
+            }
+            saveCustomerInfo();
+            updateCart();
+        });
     }
 }
 
@@ -313,12 +412,17 @@ function normalizeCustomization(category, item, customization = null) {
         : ZEN_WOK_VEGETABLES.map((vegetable) => vegetable.id));
     const sauce = ZEN_WOK_SAUCES.includes(source.sauce) ? source.sauce : ZEN_WOK_SAUCES[0];
     const side = ZEN_WOK_SIDES.includes(source.side) ? source.side : ZEN_WOK_SIDES[0];
+    const supplementSource = source.supplements || {};
 
     return {
         type: "zen-wok",
         vegetables: ZEN_WOK_VEGETABLES.filter((vegetable) => vegetableIds.has(vegetable.id)).map((vegetable) => vegetable.id),
         sauce,
-        side
+        side,
+        supplements: ZEN_WOK_SUPPLEMENTS.reduce((acc, supplement) => {
+            acc[supplement.id] = Math.max(0, Number(supplementSource[supplement.id]) || 0);
+            return acc;
+        }, {})
     };
 }
 
@@ -343,6 +447,10 @@ function getSupplementById(id) {
     return FRESH_BOWL_SUPPLEMENTS.find((supplement) => supplement.id === id);
 }
 
+function getWokSupplementById(id) {
+    return ZEN_WOK_SUPPLEMENTS.find((supplement) => supplement.id === id);
+}
+
 function getCustomizationCost(customization) {
     if (!customization) return 0;
 
@@ -356,6 +464,13 @@ function getCustomizationCost(customization) {
     if (customization.type === "kids-drinks") {
         const drinkCount = Object.values(customization.drinks || {}).reduce((sum, qty) => sum + qty, 0);
         return Math.max(0, drinkCount - 1) * KIDS_EXTRA_DRINK_PRICE;
+    }
+
+    if (customization.type === "zen-wok") {
+        return Object.entries(customization.supplements || {}).reduce((sum, [id, qty]) => {
+            const supplement = getWokSupplementById(id);
+            return sum + (supplement ? supplement.price * qty : 0);
+        }, 0);
     }
 
     return 0;
@@ -389,7 +504,12 @@ function getCustomizationKey(category, item, customization) {
         .filter((vegetable) => normalized.vegetables.includes(vegetable.id))
         .map((vegetable) => vegetable.id)
         .join("-");
-    return `wok-${vegetables || "sans-legumes"}-${slugify(normalized.sauce)}-${slugify(normalized.side)}`;
+    const supplements = ZEN_WOK_SUPPLEMENTS
+        .map((supplement) => [supplement.id, normalized.supplements[supplement.id] || 0])
+        .filter(([, qty]) => qty > 0)
+        .map(([id, qty]) => `${id}-${qty}`)
+        .join("-");
+    return `wok-${vegetables || "sans-legumes"}-${slugify(normalized.sauce)}-${slugify(normalized.side)}-${supplements || "sans-supplements"}`;
 }
 
 function makeCartEntryId(category, item, customization) {
@@ -533,43 +653,104 @@ function getCustomizationSummary(customization) {
         const vegetables = ZEN_WOK_VEGETABLES
             .filter((vegetable) => customization.vegetables.includes(vegetable.id))
             .map((vegetable) => vegetable.label);
+        const supplements = ZEN_WOK_SUPPLEMENTS
+            .filter((supplement) => (customization.supplements || {})[supplement.id] > 0)
+            .map((supplement) => `${supplement.label} x${customization.supplements[supplement.id]}`);
         return [
             `Légumes: ${vegetables.length ? vegetables.join(", ") : "sans légumes"}`,
             `Sauce: ${customization.sauce}`,
-            `Accompagnement: ${customization.side}`
-        ];
+            `Accompagnement: ${customization.side}`,
+            supplements.length ? `Suppléments: ${supplements.join(", ")}` : ""
+        ].filter(Boolean);
     }
 
     return [];
 }
 
+function isSushiAccessoryCategory(category) {
+    return SUSHI_ACCESSORY_CATEGORIES.has(category);
+}
+
+function isBaguetteOnlyCategory(category) {
+    return BAGUETTE_ONLY_CATEGORIES.has(category);
+}
+
+function getAccessoryBase() {
+    return cart.reduce((base, entry) => {
+        const lineTotal = getEntryUnitPrice(entry) * entry.qty;
+        if (isSushiAccessoryCategory(entry.category)) {
+            base.sushiTotal += lineTotal;
+            base.sushiQty += entry.qty;
+        } else if (isBaguetteOnlyCategory(entry.category)) {
+            base.baguetteOnlyTotal += lineTotal;
+            base.baguetteOnlyQty += entry.qty;
+        }
+        return base;
+    }, { sushiTotal: 0, sushiQty: 0, baguetteOnlyTotal: 0, baguetteOnlyQty: 0 });
+}
+
 function getAccessoryQuota() {
-    const quota = Math.floor(getFoodTotal() / 10);
+    const base = getAccessoryBase();
+    const sushiQuota = Math.floor(base.sushiTotal / 10);
+    const baguetteOnlyQuota = Math.floor(base.baguetteOnlyTotal / 10);
     return {
-        sauce: quota,
-        baguettes: quota,
-        wasabi: quota,
-        gingembre: quota
+        sauce: sushiQuota,
+        baguettes: sushiQuota + baguetteOnlyQuota,
+        wasabi: sushiQuota,
+        gingembre: sushiQuota,
+        hasSushi: base.sushiQty > 0,
+        hasBaguetteOnly: base.baguetteOnlyQty > 0
     };
+}
+
+function getAvailableAccessories(quota = getAccessoryQuota()) {
+    if (!quota.hasSushi && !quota.hasBaguetteOnly) return [];
+    return ACCESSORIES.filter((accessory) => {
+        if (accessory.id === "baguettes") return quota.hasSushi || quota.hasBaguetteOnly;
+        return quota.hasSushi;
+    });
+}
+
+function getDefaultAccessoryQty(accessory, quota) {
+    if (accessory.id === "soy-sweet") return 0;
+    return quota[accessory.quota] || 0;
 }
 
 function syncAccessoryDefaults() {
     const quota = getAccessoryQuota();
-    ACCESSORIES.forEach((accessory) => {
+    const availableAccessories = getAvailableAccessories(quota);
+    const availableIds = new Set(availableAccessories.map((accessory) => accessory.id));
+
+    Object.keys(accessories).forEach((id) => {
+        if (!availableIds.has(id)) delete accessories[id];
+    });
+
+    availableAccessories.forEach((accessory) => {
         if (accessories[accessory.id] == null) {
-            accessories[accessory.id] = accessory.id === "soy-salty" ? quota.sauce : quota[accessory.quota];
+            accessories[accessory.id] = getDefaultAccessoryQty(accessory, quota);
         }
     });
+
     writeJson("zenAccessories", accessories);
+}
+
+function getAccessoryFreeQty(accessory, quota, sauceQty) {
+    const qty = accessories[accessory.id] || 0;
+    if (accessory.quota === "sauce") {
+        return Math.min(qty, Math.max(0, quota.sauce - Math.max(0, sauceQty - qty)));
+    }
+    return Math.min(qty, quota[accessory.quota] || 0);
 }
 
 function getAccessoryOverage() {
     const quota = getAccessoryQuota();
-    const sauceQty = (accessories["soy-salty"] || 0) + (accessories["soy-sweet"] || 0);
-    return ACCESSORIES.reduce((sum, accessory) => {
-        if (accessory.quota === "sauce") return sum;
-        return sum + Math.max(0, (accessories[accessory.id] || 0) - quota[accessory.quota]);
-    }, Math.max(0, sauceQty - quota.sauce));
+    const availableAccessories = getAvailableAccessories(quota);
+    const sauceQty = quota.hasSushi ? (accessories["soy-salty"] || 0) + (accessories["soy-sweet"] || 0) : 0;
+    return availableAccessories.reduce((sum, accessory) => {
+        const qty = accessories[accessory.id] || 0;
+        const free = getAccessoryFreeQty(accessory, quota, sauceQty);
+        return sum + Math.max(0, qty - free);
+    }, 0);
 }
 
 function getDeliveryFee() {
@@ -629,12 +810,29 @@ function renderCartItems() {
 }
 
 function renderAccessories() {
+    if (!cartAccessoriesSection || !accessoryItems || !accessoryQuotaText) return;
     const quota = getAccessoryQuota();
-    const sauceQty = (accessories["soy-salty"] || 0) + (accessories["soy-sweet"] || 0);
-    accessoryQuotaText.textContent = `Quota gratuit: ${quota.baguettes} baguette(s), ${quota.sauce} sauce(s), ${quota.wasabi} wasabi, ${quota.gingembre} gingembre.`;
-    accessoryItems.innerHTML = ACCESSORIES.map((accessory) => {
+    const availableAccessories = getAvailableAccessories(quota);
+    if (!availableAccessories.length) {
+        cartAccessoriesSection.hidden = true;
+        accessoryQuotaText.textContent = "";
+        accessoryItems.innerHTML = "";
+        return;
+    }
+
+    cartAccessoriesSection.hidden = false;
+    const sauceQty = quota.hasSushi ? (accessories["soy-salty"] || 0) + (accessories["soy-sweet"] || 0) : 0;
+    const quotaNotes = [];
+    if (quota.hasSushi) {
+        quotaNotes.push(`${quota.sauce} sauce(s), ${quota.wasabi} wasabi, ${quota.gingembre} gingembre`);
+    }
+    if (quota.hasSushi || quota.hasBaguetteOnly) {
+        quotaNotes.unshift(`${quota.baguettes} baguette(s)`);
+    }
+    accessoryQuotaText.textContent = `Quota gratuit: ${quotaNotes.join(", ")}. Sauces uniquement pour les sushi; bowls chauds et poke bowl: baguettes seulement.`;
+    accessoryItems.innerHTML = availableAccessories.map((accessory) => {
         const qty = accessories[accessory.id] || 0;
-        const free = accessory.quota === "sauce" ? Math.min(qty, Math.max(0, quota.sauce - Math.max(0, sauceQty - qty))) : Math.min(qty, quota[accessory.quota]);
+        const free = getAccessoryFreeQty(accessory, quota, sauceQty);
         const paid = Math.max(0, qty - free);
         return `
             <article class="accessory-line">
@@ -659,7 +857,7 @@ function renderCartServiceSummary() {
     }
 
     if (!deliveryInfo) {
-        cartServiceSummary.innerHTML = `<strong>Livraison</strong><span>Entrez votre adresse avant de valider la commande.</span>`;
+        cartServiceSummary.innerHTML = `<strong>Livraison</strong><span>Adresse et frais de livraison transmis sur WhatsApp; frais à calculer par le restaurant.</span>`;
         return;
     }
 
@@ -671,24 +869,420 @@ function renderCartServiceSummary() {
     cartServiceSummary.innerHTML = `<strong>Livraison</strong><span>${deliveryInfo.distance.toFixed(1)} km - frais ${formatMoney(deliveryInfo.fee)} - minimum ${formatMoney(deliveryInfo.minimum)} - ${deliveryInfo.eta}</span>`;
 }
 
+function getCustomerValidationMessage() {
+    if (!customerNameInput && !customerPhoneInput && !customerAddressInput && !customerEmailInput) return "";
+    const info = getCustomerInfo();
+    if (!info.name) return "Veuillez indiquer le nom du client.";
+    if (!info.phone) return "Veuillez indiquer le telephone du client.";
+    if (serviceMode === "delivery" && !info.address) return "Veuillez indiquer l'adresse de livraison.";
+    if (info.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(info.email)) return "Veuillez verifier l'email du client.";
+    return "";
+}
+
 function updateCheckoutMessage() {
     const foodTotal = getFoodTotal();
+    const customerMessage = getCustomerValidationMessage();
     let message = "";
 
     if (!cart.length) {
         message = "Ajoutez un plat pour commencer.";
-    } else if (serviceMode === "delivery" && !deliveryInfo) {
-        message = "Veuillez vérifier votre adresse de livraison.";
+    } else if (customerMessage) {
+        message = customerMessage;
     } else if (serviceMode === "delivery" && deliveryInfo && !deliveryInfo.available) {
         message = "Zone non desservie actuellement.";
     } else if (serviceMode === "delivery" && deliveryInfo && foodTotal < deliveryInfo.minimum) {
         message = `Montant minimum pour cette zone : ${formatMoney(deliveryInfo.minimum)}. Il manque ${formatMoney(deliveryInfo.minimum - foodTotal)}.`;
     } else {
-        message = "Commande prête à valider.";
+        message = CHECKOUT_READY_MESSAGE;
     }
 
     checkoutMessage.textContent = message;
-    validateCartButton.disabled = message !== "Commande prête à valider.";
+    validateCartButton.disabled = message !== CHECKOUT_READY_MESSAGE;
+    if (invoiceButton) invoiceButton.disabled = validateCartButton.disabled;
+}
+
+function getOrderReference() {
+    if (currentOrderReference) return currentOrderReference;
+    const now = new Date();
+    const pad = (value) => String(value).padStart(2, "0");
+    currentOrderReference = `ZSW-${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    return currentOrderReference;
+}
+
+function getSelectedAccessoryLines() {
+    const quota = getAccessoryQuota();
+    const availableAccessories = getAvailableAccessories(quota);
+    const sauceQty = quota.hasSushi ? (accessories["soy-salty"] || 0) + (accessories["soy-sweet"] || 0) : 0;
+    return availableAccessories
+        .map((accessory) => {
+            const qty = accessories[accessory.id] || 0;
+            if (!qty) return null;
+            const free = getAccessoryFreeQty(accessory, quota, sauceQty);
+            const paid = Math.max(0, qty - free);
+            const suffix = paid
+                ? `${free} gratuit(s), ${paid} supplement(s) ${formatMoney(paid * ACCESSORY_PRICE)}`
+                : "gratuit";
+            return `- ${accessory.label} x${qty} (${suffix})`;
+        })
+        .filter(Boolean);
+}
+
+function buildWhatsAppOrderMessage() {
+    const info = getCustomerInfo();
+    const foodTotal = getFoodTotal();
+    const accessoryTotal = getAccessoryOverage() * ACCESSORY_PRICE;
+    const deliveryFee = getDeliveryFee();
+    const deliveryLabel = serviceMode === "delivery"
+        ? (deliveryInfo && deliveryInfo.available ? formatMoney(deliveryFee) : "A calculer")
+        : "0,00€";
+    const serviceLabel = serviceMode === "pickup" ? "A emporter" : "Livraison";
+    const lines = [
+        "ZEN SUSHI WOK - Nouvelle commande",
+        `Reference: ${getOrderReference()}`,
+        `Date: ${new Date().toLocaleString("fr-FR")}`,
+        `Service: ${serviceLabel}`,
+        "",
+        "CLIENT",
+        `Nom: ${info.name}`,
+        `Telephone: ${info.phone}`,
+        `Email: ${info.email || "-"}`,
+        `Adresse: ${info.address || "-"}`,
+        "",
+        "PLATS"
+    ];
+
+    cart.forEach((entry, index) => {
+        const unitPrice = getEntryUnitPrice(entry);
+        lines.push(`${index + 1}. ${entry.item.name} x${entry.qty}`);
+        if (entry.item.pieces) lines.push(`   ${entry.item.pieces}`);
+        getCustomizationSummary(entry.customization).forEach((line) => lines.push(`   ${line}`));
+        lines.push(`   ${formatMoney(unitPrice)} / unite = ${formatMoney(unitPrice * entry.qty)}`);
+    });
+
+    const accessoryLines = getSelectedAccessoryLines();
+    if (accessoryLines.length) {
+        lines.push("", "ACCESSOIRES", ...accessoryLines);
+    }
+
+    if (serviceMode === "delivery" && deliveryInfo && deliveryInfo.available) {
+        lines.push("", "LIVRAISON", `${deliveryInfo.distance.toFixed(1)} km - ${deliveryInfo.eta} - minimum ${formatMoney(deliveryInfo.minimum)}`);
+    }
+
+    lines.push(
+        "",
+        "TOTAL",
+        `Plats: ${formatMoney(foodTotal)}`,
+        `Accessoires: ${formatMoney(accessoryTotal)}`,
+        `Livraison: ${deliveryLabel}`,
+        `Total: ${formatMoney(foodTotal + accessoryTotal + deliveryFee)}${deliveryLabel === "A calculer" ? " + livraison" : ""}`
+    );
+
+    return lines.join("\n");
+}
+
+function buildInvoiceDocument() {
+    const info = getCustomerInfo();
+    const foodTotal = getFoodTotal();
+    const accessoryTotal = getAccessoryOverage() * ACCESSORY_PRICE;
+    const deliveryFee = getDeliveryFee();
+    const grandTotal = foodTotal + accessoryTotal + deliveryFee;
+    const deliveryLabel = serviceMode === "delivery"
+        ? (deliveryInfo && deliveryInfo.available ? formatMoney(deliveryFee) : "A calculer")
+        : "0,00€";
+    const serviceLabel = serviceMode === "pickup" ? "A emporter" : "Livraison";
+    const reference = getOrderReference();
+    const createdAt = new Date().toLocaleString("fr-FR");
+    const whatsappUrl = `https://wa.me/${WHATSAPP_ORDER_PHONE}?text=${encodeURIComponent(buildWhatsAppOrderMessage())}`;
+    const itemRows = cart.map((entry) => {
+        const unitPrice = getEntryUnitPrice(entry);
+        const details = [
+            entry.item.pieces,
+            ...getCustomizationSummary(entry.customization)
+        ].filter(Boolean);
+        return `
+            <tr>
+                <td>
+                    <strong>${escapeHtml(entry.item.name)}</strong>
+                    ${details.length ? `<span>${details.map(escapeHtml).join("<br>")}</span>` : ""}
+                </td>
+                <td>${entry.qty}</td>
+                <td>${formatMoney(unitPrice)}</td>
+                <td>${formatMoney(unitPrice * entry.qty)}</td>
+            </tr>
+        `;
+    }).join("");
+    const accessoryRows = getSelectedAccessoryLines().map((line) => `<li>${escapeHtml(line.replace(/^- /, ""))}</li>`).join("");
+
+    return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facture ${reference} - Zen Sushi Wok</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: #f2f0ed;
+            color: #151515;
+            font-family: Arial, sans-serif;
+        }
+        .invoice-actions {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px;
+            background: #111;
+        }
+        .invoice-actions button,
+        .invoice-actions a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 42px;
+            padding: 0 16px;
+            border: 0;
+            border-radius: 8px;
+            background: #d83a2e;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 800;
+            text-decoration: none;
+        }
+        .sheet {
+            width: min(820px, calc(100% - 28px));
+            margin: 24px auto;
+            padding: 36px;
+            border-radius: 12px;
+            background: #fff;
+            box-shadow: 0 16px 44px rgba(0, 0, 0, 0.13);
+        }
+        .invoice-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 24px;
+            padding-bottom: 24px;
+            border-bottom: 3px solid #111;
+        }
+        .brand h1 {
+            margin: 0;
+            font-size: 34px;
+            line-height: 1;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .brand h1 span { color: #ef6a22; }
+        .brand p,
+        .meta p,
+        .box p {
+            margin: 6px 0 0;
+            color: #666;
+            line-height: 1.45;
+        }
+        .meta {
+            min-width: 220px;
+            text-align: right;
+        }
+        .meta strong {
+            display: block;
+            color: #d83a2e;
+            font-size: 22px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 24px 0;
+        }
+        .box {
+            padding: 16px;
+            border: 1px solid #e7e2dc;
+            border-radius: 10px;
+            background: #fbfbfb;
+        }
+        .box h2,
+        .summary h2 {
+            margin: 0 0 8px;
+            font-size: 13px;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            overflow: hidden;
+            border-radius: 10px;
+        }
+        th {
+            padding: 12px;
+            background: #111;
+            color: #fff;
+            font-size: 12px;
+            text-align: left;
+            text-transform: uppercase;
+        }
+        td {
+            padding: 13px 12px;
+            border-bottom: 1px solid #ece7e1;
+            vertical-align: top;
+        }
+        td:nth-child(n+2),
+        th:nth-child(n+2) {
+            text-align: right;
+            white-space: nowrap;
+        }
+        td span {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+        .accessories {
+            margin: 22px 0 0;
+            padding: 16px;
+            border-radius: 10px;
+            background: #fff5f3;
+        }
+        .accessories h2 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; }
+        .accessories ul { margin: 0; padding-left: 18px; color: #444; line-height: 1.7; }
+        .totals {
+            width: min(360px, 100%);
+            margin: 24px 0 0 auto;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 9px 0;
+            border-bottom: 1px solid #ece7e1;
+            color: #444;
+        }
+        .total-row.grand {
+            border-bottom: 0;
+            color: #111;
+            font-size: 22px;
+            font-weight: 800;
+        }
+        .note {
+            margin-top: 26px;
+            padding-top: 18px;
+            border-top: 1px solid #ece7e1;
+            color: #666;
+            font-size: 12px;
+            line-height: 1.55;
+        }
+        @media (max-width: 680px) {
+            .sheet { padding: 22px; }
+            .invoice-head,
+            .grid { grid-template-columns: 1fr; display: grid; }
+            .meta { text-align: left; }
+            th, td { padding: 10px 8px; font-size: 13px; }
+        }
+        @media print {
+            body { background: #fff; }
+            .invoice-actions { display: none; }
+            .sheet {
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                border-radius: 0;
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-actions">
+        <button type="button" onclick="window.print()">Imprimer / Enregistrer en PDF</button>
+        <a href="${whatsappUrl}" target="_blank" rel="noopener">Ouvrir WhatsApp</a>
+    </div>
+    <main class="sheet">
+        <header class="invoice-head">
+            <div class="brand">
+                <h1>Zen Sushi <span>Wok</span></h1>
+                <p>108 BD du Général de Gaulle<br>06340 La Trinité - France</p>
+                <p>zensushiwok06@gmail.com</p>
+            </div>
+            <div class="meta">
+                <strong>Facture</strong>
+                <p>Référence: ${escapeHtml(reference)}</p>
+                <p>Date: ${escapeHtml(createdAt)}</p>
+            </div>
+        </header>
+        <section class="grid">
+            <div class="box">
+                <h2>Client</h2>
+                <p><strong>${escapeHtml(info.name)}</strong></p>
+                <p>${escapeHtml(info.phone)}</p>
+                <p>${escapeHtml(info.email || "-")}</p>
+                <p>${escapeHtml(info.address || "-")}</p>
+            </div>
+            <div class="box">
+                <h2>Service</h2>
+                <p><strong>${serviceLabel}</strong></p>
+                <p>Livraison: ${deliveryLabel}</p>
+                ${serviceMode === "delivery" && deliveryInfo && deliveryInfo.available ? `<p>${deliveryInfo.distance.toFixed(1)} km - ${escapeHtml(deliveryInfo.eta)}</p>` : ""}
+            </div>
+        </section>
+        <section class="summary">
+            <h2>Détail de la commande</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Article</th>
+                        <th>Qté</th>
+                        <th>PU</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>${itemRows}</tbody>
+            </table>
+        </section>
+        ${accessoryRows ? `<section class="accessories"><h2>Accessoires</h2><ul>${accessoryRows}</ul></section>` : ""}
+        <section class="totals">
+            <div class="total-row"><span>Plats</span><strong>${formatMoney(foodTotal)}</strong></div>
+            <div class="total-row"><span>Accessoires</span><strong>${formatMoney(accessoryTotal)}</strong></div>
+            <div class="total-row"><span>Livraison</span><strong>${deliveryLabel}</strong></div>
+            <div class="total-row grand"><span>Total</span><strong>${formatMoney(grandTotal)}${deliveryLabel === "A calculer" ? " + livraison" : ""}</strong></div>
+        </section>
+        <p class="note">Document généré depuis le site Zen Sushi Wok. Les prix, disponibilités et frais de livraison restent à confirmer par le restaurant.</p>
+    </main>
+</body>
+</html>`;
+}
+
+function openInvoiceWindow() {
+    saveCustomerInfo();
+    updateCart();
+    if (validateCartButton.disabled) {
+        showToast(checkoutMessage.textContent);
+        return;
+    }
+    const invoiceWindow = window.open("", "_blank");
+    if (!invoiceWindow) {
+        showToast("Autorisez les pop-ups pour ouvrir la facture.");
+        return;
+    }
+    invoiceWindow.document.open();
+    invoiceWindow.document.write(buildInvoiceDocument());
+    invoiceWindow.document.close();
+}
+
+function submitWhatsAppOrder() {
+    saveCustomerInfo();
+    updateCart();
+    if (validateCartButton.disabled) {
+        showToast(checkoutMessage.textContent);
+        return;
+    }
+    const url = `https://wa.me/${WHATSAPP_ORDER_PHONE}?text=${encodeURIComponent(buildWhatsAppOrderMessage())}`;
+    const opened = window.open(url, "_blank");
+    if (opened) opened.opener = null;
+    else window.location.href = url;
 }
 
 function updateVisibleQuantityControls() {
@@ -983,6 +1577,22 @@ function renderModalOptions() {
             <span>${escapeHtml(side)}</span>
         </label>
     `).join("");
+    const supplementRows = ZEN_WOK_SUPPLEMENTS.map((supplement) => {
+        const qty = modalCustomization.supplements[supplement.id] || 0;
+        return `
+            <article class="custom-option-row">
+                <div>
+                    <strong>${escapeHtml(supplement.label)}</strong>
+                    <span>+${formatMoney(supplement.price)}</span>
+                </div>
+                <div class="qty-control compact custom-qty">
+                    <button type="button" data-custom-dec="wok-supplement::${supplement.id}">-</button>
+                    <span>${qty}</span>
+                    <button type="button" data-custom-inc="wok-supplement::${supplement.id}">+</button>
+                </div>
+            </article>
+        `;
+    }).join("");
 
     modalOptionsBlock.innerHTML = `
         <section class="custom-section">
@@ -993,6 +1603,9 @@ function renderModalOptions() {
             <div class="choice-grid">${sauceChoices}</div>
             <div class="options-title custom-subtitle">Accompagnement</div>
             <div class="choice-grid">${sideChoices}</div>
+            <div class="options-title custom-subtitle">Suppléments</div>
+            <div class="custom-option-list">${supplementRows}</div>
+            <strong class="custom-total">Total suppléments: ${formatMoney(getCustomizationCost(modalCustomization))}</strong>
         </section>
     `;
 }
@@ -1011,6 +1624,10 @@ function updateCustomizationQuantity(rawKey, delta) {
         const currentTotal = Object.values(modalCustomization.drinks || {}).reduce((sum, qty) => sum + qty, 0);
         if (currentTotal - current + next < 1) return;
         modalCustomization.drinks[id] = next;
+    }
+
+    if (type === "wok-supplement" && modalCustomization.type === "zen-wok") {
+        modalCustomization.supplements[id] = Math.max(0, (modalCustomization.supplements[id] || 0) + delta);
     }
 
     modalCustomization = normalizeCustomization(activeCategory, activeDish, modalCustomization);
@@ -1273,12 +1890,9 @@ function renderHomeRails() {
             </div>
             <div class="rail-track" data-rail-track="${railIndex}">
                 ${rail.entries.map((entry) => railCardMarkup(entry.item, entry.category)).join("")}
-                ${rail.entries.map((entry) => railCardMarkup(entry.item, entry.category)).join("")}
             </div>
         </section>
     `).join("");
-
-    productRails.querySelectorAll(".rail-track").forEach((track) => startRailAutoScroll(track));
 }
 
 function railCardMarkup(item, category) {
@@ -1297,19 +1911,6 @@ function railCardMarkup(item, category) {
     `;
 }
 
-function startRailAutoScroll(track) {
-    let paused = false;
-    track.addEventListener("mouseenter", () => { paused = true; });
-    track.addEventListener("mouseleave", () => { paused = false; });
-    track.addEventListener("touchstart", () => { paused = true; }, { passive: true });
-    track.addEventListener("touchend", () => { setTimeout(() => { paused = false; }, 1200); }, { passive: true });
-    setInterval(() => {
-        if (paused || document.body.classList.contains("ordering-mode")) return;
-        track.scrollLeft += 1;
-        if (track.scrollLeft > track.scrollWidth / 2) track.scrollLeft = 0;
-    }, 55);
-}
-
 function findDishById(id) {
     const [category, itemKey] = String(id || "").split("::");
     const item = (menuData[category] || []).find((dish) => dish.fileName === itemKey || dish.name === itemKey);
@@ -1326,7 +1927,10 @@ function applyServiceMode(mode) {
 }
 
 function estimateDelivery() {
-    const value = deliveryAddress.value.trim();
+    const value = (customerAddressInput && customerAddressInput.value ? customerAddressInput.value : deliveryAddress.value).trim();
+    if (deliveryAddress) deliveryAddress.value = value;
+    if (customerAddressInput) customerAddressInput.value = value;
+    saveCustomerInfo();
     if (!value) {
         deliveryInfo = null;
         deliveryResult.hidden = true;
@@ -1383,6 +1987,7 @@ function clearCart() {
     cart = [];
     accessories = {};
     savedCustomizations = {};
+    currentOrderReference = "";
     writeJson("zenCartItems", cart);
     writeJson("zenAccessories", accessories);
     writeJson("zenSavedCustomizations", savedCustomizations);
@@ -1463,6 +2068,7 @@ document.addEventListener("click", (event) => {
 
     if (accessoryIncButton || accessoryDecButton) {
         const id = (accessoryIncButton || accessoryDecButton).dataset.accessoryInc || (accessoryIncButton || accessoryDecButton).dataset.accessoryDec;
+        if (!getAvailableAccessories().some((accessory) => accessory.id === id)) return;
         accessories[id] = Math.max(0, (accessories[id] || 0) + (accessoryIncButton ? 1 : -1));
         writeJson("zenAccessories", accessories);
         updateCart();
@@ -1488,7 +2094,8 @@ if (checkDeliveryButton) checkDeliveryButton.addEventListener("click", estimateD
 if (deliveryAddress) deliveryAddress.addEventListener("keydown", (event) => { if (event.key === "Enter") estimateDelivery(); });
 cartButton.addEventListener("click", openCart);
 checkoutButton.addEventListener("click", openCart);
-validateCartButton.addEventListener("click", () => showToast(validateCartButton.disabled ? checkoutMessage.textContent : "Commande prête. Connexion paiement à brancher."));
+if (invoiceButton) invoiceButton.addEventListener("click", openInvoiceWindow);
+validateCartButton.addEventListener("click", submitWhatsAppOrder);
 clearCartButton.addEventListener("click", clearCart);
 
 document.addEventListener("keydown", (event) => {

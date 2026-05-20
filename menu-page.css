@@ -588,7 +588,7 @@ body.header-compact .logo {
     overflow: hidden;
     place-items: center;
     aspect-ratio: 4 / 3;
-    background: #eeeeee;
+    background: #080808;
 }
 
 .wine-card .img-box {
@@ -610,7 +610,9 @@ body.header-compact .logo {
 .food-card img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    padding: 6px;
+    object-fit: contain;
+    object-position: center;
     opacity: 0;
     transition: opacity 0.25s ease, transform 0.25s ease;
 }
@@ -823,7 +825,7 @@ body.header-compact .logo {
 
 .modal-image {
     min-height: 100%;
-    background: var(--card-soft);
+    background: #080808;
 }
 
 .modal-image img,
@@ -831,7 +833,8 @@ body.header-compact .logo {
     width: 100%;
     height: 100%;
     min-height: 460px;
-    object-fit: cover;
+    object-fit: contain;
+    object-position: center;
 }
 
 .wine-modal .modal-image {
@@ -1214,7 +1217,9 @@ body.header-compact .logo {
 .rail-image img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    padding: 6px;
+    object-fit: contain;
+    object-position: center;
     transition: transform 0.2s ease;
 }
 
@@ -1370,21 +1375,47 @@ body.header-compact .logo {
 
 .cart-items,
 .cart-accessories,
+.cart-customer-form,
 .cart-service-summary {
     display: grid;
     gap: 10px;
 }
 
 .cart-accessories,
+.cart-customer-form,
 .cart-service-summary {
     margin-top: 18px;
     padding-top: 16px;
     border-top: 1px solid var(--line);
 }
 
-.cart-accessories h3 {
+.cart-accessories h3,
+.cart-customer-form h3 {
     font-size: 15px;
     text-transform: uppercase;
+}
+
+.cart-customer-form label {
+    color: var(--muted-strong);
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.cart-customer-form input {
+    width: 100%;
+    min-height: 42px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fbfbfb;
+    color: var(--text);
+    outline: none;
+}
+
+.cart-customer-form input:focus {
+    border-color: rgba(216, 58, 46, 0.62);
+    box-shadow: 0 0 0 3px rgba(216, 58, 46, 0.12);
 }
 
 .cart-accessories p,
@@ -1472,7 +1503,19 @@ body.header-compact .logo {
     font-weight: 800;
 }
 
-.checkout-main-button:disabled {
+.invoice-secondary-button {
+    width: 100%;
+    min-height: 46px;
+    margin-top: 12px;
+    border: 1px solid rgba(216, 58, 46, 0.42);
+    border-radius: 8px;
+    background: #fff5f3;
+    color: var(--accent);
+    font-weight: 800;
+}
+
+.checkout-main-button:disabled,
+.invoice-secondary-button:disabled {
     cursor: not-allowed;
     opacity: 0.48;
 }
