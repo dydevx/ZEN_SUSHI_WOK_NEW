@@ -8,6 +8,7 @@ const nav = document.getElementById("mainNav");
 const display = document.getElementById("foodDisplay");
 const title = document.getElementById("currentCategoryName");
 const homeSection = document.getElementById("homeSection");
+const menuIntroSection = document.getElementById("menuIntroSection");
 const homeRails = document.getElementById("homeRails");
 const cartCountEl = document.getElementById("cartCount");
 const cartTotalHeader = document.getElementById("cartTotalHeader");
@@ -70,6 +71,7 @@ const DELIVERY_ZONES = [
     { max: 7.5, fee: 5, minimum: 45, eta: "45-60 min" }
 ];
 const ACCESSORY_PRICE = 0.5;
+const ACCESSORY_DEFAULTS_KEY = "zenAccessoryDefaults";
 const ACCESSORIES = [
     { id: "soy-salty", label: "Sauce soja salée", quota: "sauce" },
     { id: "soy-sweet", label: "Sauce soja sucrée", quota: "sauce" },
@@ -118,6 +120,7 @@ let serviceMode = localStorage.getItem("zenServiceMode") || "delivery";
 let deliveryInfo = readJson("zenDeliveryInfo", null);
 let cart = readJson("zenCartItems", []);
 let accessories = readJson("zenAccessories", {});
+let accessoryDefaults = readJson(ACCESSORY_DEFAULTS_KEY, {});
 let savedCustomizations = readJson("zenSavedCustomizations", {});
 let selectedGroupItems = new Map();
 let modalCustomization = null;
@@ -664,7 +667,8 @@ function getAccessoryBase() {
 
 function getAccessoryQuota() {
     const base = getAccessoryBase();
-    const quota = Math.floor(base.eligibleTotal / 15);
+    const eligibleCents = Math.round(base.eligibleTotal * 100);
+    const quota = eligibleCents > 0 ? Math.ceil(eligibleCents / 1500) : 0;
     return {
         sauce: quota,
         baguettes: quota,
@@ -691,14 +695,23 @@ function syncAccessoryDefaults() {
     Object.keys(accessories).forEach((id) => {
         if (!availableIds.has(id)) delete accessories[id];
     });
+    Object.keys(accessoryDefaults).forEach((id) => {
+        if (!availableIds.has(id)) delete accessoryDefaults[id];
+    });
 
     availableAccessories.forEach((accessory) => {
+        const nextDefault = getDefaultAccessoryQty(accessory, quota);
+        const previousDefault = accessoryDefaults[accessory.id];
         if (accessories[accessory.id] == null) {
-            accessories[accessory.id] = getDefaultAccessoryQty(accessory, quota);
+            accessories[accessory.id] = nextDefault;
+        } else if (previousDefault != null && accessories[accessory.id] === previousDefault) {
+            accessories[accessory.id] = nextDefault;
         }
+        accessoryDefaults[accessory.id] = nextDefault;
     });
 
     writeJson("zenAccessories", accessories);
+    writeJson(ACCESSORY_DEFAULTS_KEY, accessoryDefaults);
 }
 
 function getAccessoryFreeQty(accessory, quota, sauceQty) {
@@ -794,7 +807,7 @@ function renderAccessories() {
     quotaNotes.push(`${quota.sauce} sauce soja au choix`);
     quotaNotes.push(`${quota.wasabi} wasabi`);
     quotaNotes.push(`${quota.gingembre} gingembre`);
-    accessoryQuotaText.textContent = `Quota gratuit: ${quotaNotes.join(", ")}. 1 quota offert par tranche de 15€ de plats.`;
+    accessoryQuotaText.textContent = `Quota gratuit: ${quotaNotes.join(", ")}. 1 quota offert par tranche entamée de 15€ de plats.`;
     accessoryItems.innerHTML = availableAccessories.map((accessory) => {
         const qty = accessories[accessory.id] || 0;
         const free = getAccessoryFreeQty(accessory, quota, sauceQty);
@@ -1729,6 +1742,7 @@ function updateSelectedSubnav(group, groupItem) {
 function enterOrderingMode() {
     document.body.classList.add("ordering-mode");
     homeSection.classList.add("hidden");
+    if (menuIntroSection) menuIntroSection.hidden = true;
     if (homeRails) homeRails.hidden = true;
 }
 
@@ -1793,6 +1807,10 @@ function renderGroupNav() {
 function selectInitialGroupFromHash() {
     const hash = window.location.hash.replace("#", "");
     if (!hash) return;
+    if (hash === "menu") {
+        showMenuIntro();
+        return;
+    }
 
     const group = menuGroups.find((menuGroup) => slugify(menuGroup.label) === hash);
     const groupIndex = menuGroups.indexOf(group);
@@ -1801,16 +1819,17 @@ function selectInitialGroupFromHash() {
 }
 
 function scrollToMenu() {
+    showMenuIntro();
+}
+
+function focusMenuCategories() {
     const firstGroup = menuGroups[0];
     const firstNavItem = document.querySelector(".nav-item");
     if (!firstGroup || !firstNavItem) return;
     selectCategory(firstGroup, firstGroup.items[0], firstNavItem, false);
 }
 
-function showHome() {
-    document.body.classList.remove("ordering-mode", "header-compact");
-    homeSection.classList.remove("hidden");
-    if (homeRails) homeRails.hidden = false;
+function resetMenuSelection() {
     display.innerHTML = "";
     title.textContent = "";
     document.querySelectorAll(".nav-item").forEach((item) => {
@@ -1819,6 +1838,28 @@ function showHome() {
     });
     hideGroupSubnav();
     selectedSubnav.hidden = true;
+}
+
+function showMenuIntro() {
+    if (!menuIntroSection) {
+        showHome();
+        return;
+    }
+    document.body.classList.remove("ordering-mode", "header-compact");
+    homeSection.classList.add("hidden");
+    if (homeRails) homeRails.hidden = true;
+    menuIntroSection.hidden = false;
+    resetMenuSelection();
+    if (window.location.hash !== "#menu") window.history.replaceState(null, "", "#menu");
+    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+}
+
+function showHome() {
+    document.body.classList.remove("ordering-mode", "header-compact");
+    homeSection.classList.remove("hidden");
+    if (menuIntroSection) menuIntroSection.hidden = true;
+    if (homeRails) homeRails.hidden = false;
+    resetMenuSelection();
     if (window.location.hash) window.history.replaceState(null, "", window.location.pathname + window.location.search);
     requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
 }
@@ -1826,7 +1867,7 @@ function showHome() {
 function renderHomeRails() {
     if (!productRails) return;
     const railDefs = [
-        { title: "Tous les plats", entries: getCategoryItems("PLATEAU").slice(0, 8).map((item) => ({ category: "PLATEAU", item })) },
+        { title: "Tous les plats", entries: getCategoryItems("PLATEAU").map((item) => ({ category: "PLATEAU", item })) },
         { title: "Signatures Roll", entries: getCategoryItems("SIGNATURES").slice(0, 10).map((item) => ({ category: "SIGNATURES", item })) },
         {
             title: "Hot Bowl",
@@ -1951,10 +1992,12 @@ function closeCart() {
 function clearCart() {
     cart = [];
     accessories = {};
+    accessoryDefaults = {};
     savedCustomizations = {};
     currentOrderReference = "";
     writeJson("zenCartItems", cart);
     writeJson("zenAccessories", accessories);
+    writeJson(ACCESSORY_DEFAULTS_KEY, accessoryDefaults);
     writeJson("zenSavedCustomizations", savedCustomizations);
     syncAccessoryDefaults();
     updateCart();

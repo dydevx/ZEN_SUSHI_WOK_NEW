@@ -159,6 +159,81 @@
             transform: translateY(-1px);
         }
 
+        .menu-intro-section {
+            position: relative;
+            isolation: isolate;
+            display: grid;
+            grid-template-rows: minmax(280px, 1fr) auto;
+            min-height: clamp(560px, calc(100svh - 154px), 760px);
+            overflow: hidden;
+            padding: 0;
+            background: #050505;
+            text-align: center;
+        }
+
+        .menu-intro-section[hidden] {
+            display: none !important;
+        }
+
+        .menu-intro-section::after {
+            display: none;
+        }
+
+        .menu-intro-photo {
+            display: grid;
+            justify-content: center;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .menu-intro-photo img {
+            width: min(100vw, 640px);
+            height: 100%;
+            object-fit: cover;
+            object-position: center top;
+        }
+
+        .menu-intro-content {
+            position: relative;
+            z-index: 2;
+            justify-self: center;
+            width: min(780px, 100%);
+            padding: 18px 16px 28px;
+            background: #050505;
+        }
+
+        .menu-intro-content h2 {
+            color: #ffffff;
+            font-size: clamp(34px, 4.8vw, 56px);
+            font-weight: 800;
+            line-height: 1;
+            text-transform: uppercase;
+        }
+
+        .menu-intro-content p {
+            margin: 12px auto 18px;
+            color: rgba(255, 255, 255, 0.86);
+            font-size: clamp(15px, 1.8vw, 20px);
+            line-height: 1.45;
+        }
+
+        .menu-intro-content button {
+            min-height: 54px;
+            padding: 0 24px;
+            border: 0;
+            border-radius: 8px;
+            background: var(--accent);
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 800;
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        .menu-intro-content button:hover {
+            background: var(--accent-dark);
+            transform: translateY(-1px);
+        }
+
         .single-section {
             padding: 68px max(16px, calc((100vw - 1220px) / 2));
             background: #0d0d0d;
@@ -544,6 +619,15 @@
                 margin-bottom: 34px;
             }
 
+            .menu-intro-section {
+                min-height: calc(100svh - 156px);
+                grid-template-rows: minmax(300px, 1fr) auto;
+            }
+
+            .menu-intro-photo img {
+                width: min(100vw, 540px);
+            }
+
             .highlight-icon {
                 width: 86px;
                 height: 86px;
@@ -600,7 +684,7 @@
         <div class="top-header">
             <a href="#homeSection" class="logo" onclick="showHome(); return false;">ZEN SUSHI <span>WOK</span></a>
             <nav class="page-links" aria-label="Navigation des pages">
-                <a href="#menuContent" onclick="scrollToMenu(); return false;">Menu</a>
+                <a href="#menuIntroSection" onclick="showMenuIntro(); return false;">Menu</a>
                 <a href="#combos">Combos</a>
                 <a href="#plats-signature">Signatures</a>
                 <a href="#service">Service</a>
@@ -661,9 +745,20 @@
                 </div>
             </div>
             <div class="home-actions">
-                <button type="button" onclick="scrollToMenu()">Voir le menu</button>
+                <button type="button" onclick="showMenuIntro()">Voir le menu</button>
                 <a href="#combos">Découvrir les combos</a>
             </div>
+        </div>
+    </section>
+
+    <section class="menu-intro-section" id="menuIntroSection" hidden>
+        <div class="menu-intro-photo" aria-hidden="true">
+            <img src="chef.jpg" alt="" loading="eager" decoding="async">
+        </div>
+        <div class="menu-intro-content">
+            <h2>ZEN SUSHI WOK</h2>
+            <p>Carte japonaise et wok, pr&eacute;par&eacute;e &agrave; la minute avec des produits frais.</p>
+            <button type="button" onclick="focusMenuCategories()">Voir le menu</button>
         </div>
     </section>
 
