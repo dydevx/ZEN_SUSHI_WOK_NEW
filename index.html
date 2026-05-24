@@ -55,13 +55,13 @@
             padding: 64px max(20px, calc((100vw - 1220px) / 2)) 80px;
             background-color: #090909;
             background-image:
-                linear-gradient(90deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.16) 47%, rgba(0, 0, 0, 0.72) 100%),
-                linear-gradient(90deg, rgba(8, 0, 0, 0.58) 0%, rgba(8, 0, 0, 0.58) 48%, rgba(6, 6, 6, 0.42) 48%, rgba(6, 6, 6, 0.42) 100%),
-                url("background.png"),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.24) 0%, rgba(0, 0, 0, 0.1) 47%, rgba(0, 0, 0, 0.3) 100%),
+                linear-gradient(90deg, rgba(8, 0, 0, 0.52) 0%, rgba(8, 0, 0, 0.42) 42%, rgba(6, 6, 6, 0.12) 68%, rgba(6, 6, 6, 0.08) 100%),
+                url("chef.jpg"),
                 url("background.jpg");
-            background-position: center, center, right center, left center;
+            background-position: center, center, right 42%, center;
             background-repeat: no-repeat;
-            background-size: 100% 100%, 100% 100%, auto 100%, 52% 100%;
+            background-size: 100% 100%, 100% 100%, 58% auto, 100% 100%;
             text-align: left;
         }
 
@@ -605,12 +605,12 @@
                 min-height: calc(100svh - 156px);
                 padding: 48px 16px 42px;
                 background-image:
-                    linear-gradient(180deg, rgba(7, 0, 0, 0.5), rgba(7, 0, 0, 0.88)),
-                    linear-gradient(90deg, rgba(8, 0, 0, 0.66) 0%, rgba(8, 0, 0, 0.66) 54%, rgba(6, 6, 6, 0.48) 54%, rgba(6, 6, 6, 0.48) 100%),
-                    url("background.png"),
+                    linear-gradient(180deg, rgba(7, 0, 0, 0.28), rgba(7, 0, 0, 0.68)),
+                    linear-gradient(90deg, rgba(8, 0, 0, 0.52) 0%, rgba(8, 0, 0, 0.42) 54%, rgba(6, 6, 6, 0.12) 76%, rgba(6, 6, 6, 0.08) 100%),
+                    url("chef.jpg"),
                     url("background.jpg");
-                background-position: center, center, right center, left center;
-                background-size: 100% 100%, 100% 100%, auto 100%, 58% 100%;
+                background-position: center, center, center 42%, center;
+                background-size: 100% 100%, 100% 100%, 126% auto, 100% 100%;
             }
 
             .home-highlights {
@@ -664,6 +664,11 @@
         }
 
         @media (max-width: 560px) {
+            .home-section {
+                background-position: center, center, center 36%, center;
+                background-size: 100% 100%, 100% 100%, cover, 100% 100%;
+            }
+
             .home-highlights {
                 grid-template-columns: 1fr;
             }
