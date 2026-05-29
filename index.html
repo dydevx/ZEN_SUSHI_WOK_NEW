@@ -335,6 +335,32 @@
             display: none;
         }
 
+        @media (min-width: 761px) {
+            .page-links,
+            .signature-slider {
+                scrollbar-color: rgba(216, 58, 46, 0.78) rgba(255, 255, 255, 0.14);
+                scrollbar-width: thin;
+            }
+
+            .page-links::-webkit-scrollbar,
+            .signature-slider::-webkit-scrollbar {
+                display: block;
+                height: 8px;
+            }
+
+            .page-links::-webkit-scrollbar-track,
+            .signature-slider::-webkit-scrollbar-track {
+                background: rgba(255, 255, 255, 0.14);
+                border-radius: 999px;
+            }
+
+            .page-links::-webkit-scrollbar-thumb,
+            .signature-slider::-webkit-scrollbar-thumb {
+                background: rgba(216, 58, 46, 0.78);
+                border-radius: 999px;
+            }
+        }
+
         .signature-card {
             position: relative;
             flex: 0 0 250px;

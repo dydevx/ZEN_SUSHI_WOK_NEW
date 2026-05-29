@@ -21,15 +21,8 @@
 
 html {
     scroll-behavior: smooth;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-}
-
-html::-webkit-scrollbar,
-body::-webkit-scrollbar {
-    width: 0;
-    height: 0;
-    display: none;
+    scrollbar-width: auto;
+    -ms-overflow-style: auto;
 }
 
 body {
@@ -1294,6 +1287,40 @@ body.header-compact .logo {
     color: rgba(255, 255, 255, 0.52);
     font-size: 12px;
     font-weight: 800;
+}
+
+@media (min-width: 761px) {
+    .category-nav,
+    .group-subnav,
+    .rail-track,
+    .review-slider {
+        scrollbar-color: rgba(216, 58, 46, 0.78) rgba(255, 255, 255, 0.14);
+        scrollbar-width: thin;
+    }
+
+    .category-nav::-webkit-scrollbar,
+    .group-subnav::-webkit-scrollbar,
+    .rail-track::-webkit-scrollbar,
+    .review-slider::-webkit-scrollbar {
+        display: block;
+        height: 8px;
+    }
+
+    .category-nav::-webkit-scrollbar-track,
+    .group-subnav::-webkit-scrollbar-track,
+    .rail-track::-webkit-scrollbar-track,
+    .review-slider::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.14);
+        border-radius: 999px;
+    }
+
+    .category-nav::-webkit-scrollbar-thumb,
+    .group-subnav::-webkit-scrollbar-thumb,
+    .rail-track::-webkit-scrollbar-thumb,
+    .review-slider::-webkit-scrollbar-thumb {
+        background: rgba(216, 58, 46, 0.78);
+        border-radius: 999px;
+    }
 }
 
 .cart-drawer {

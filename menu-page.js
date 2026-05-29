@@ -383,10 +383,6 @@ function normalizeCustomization(category, item, customization = null) {
             acc[getDrinkChoiceId(drink)] = Math.max(0, Number(source[getDrinkChoiceId(drink)]) || 0);
             return acc;
         }, {});
-        if (!Object.values(drinks).some((qty) => qty > 0)) {
-            const defaultDrink = getDefaultKidsDrink();
-            if (defaultDrink) drinks[getDrinkChoiceId(defaultDrink)] = 1;
-        }
         return { type: "kids-drinks", drinks };
     }
 
@@ -412,11 +408,6 @@ function normalizeCustomization(category, item, customization = null) {
 
 function getKidsDrinkOptions() {
     return (menuData["BOISSON"] || []).filter((item) => !/bière|biere/i.test(item.name) && parsePrice(item.price) <= 3.5);
-}
-
-function getDefaultKidsDrink() {
-    const drinks = getKidsDrinkOptions();
-    return drinks.find((item) => /^Coca-Cola$/i.test(item.name)) || drinks[0] || null;
 }
 
 function getDrinkChoiceId(item) {
@@ -481,7 +472,7 @@ function getCustomizationKey(category, item, customization) {
             .filter(([, qty]) => qty > 0)
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([id, qty]) => `${slugify(id)}-${qty}`);
-        return `kids-${selected.join("_")}`;
+        return `kids-${selected.length ? selected.join("_") : "none"}`;
     }
 
     const vegetables = ZEN_WOK_VEGETABLES
@@ -626,6 +617,7 @@ function getCustomizationSummary(customization) {
                 return `${drink ? drink.name : id} x${qty}`;
             });
         const total = Object.values(customization.drinks || {}).reduce((sum, qty) => sum + qty, 0);
+        if (!total) return ["Choix de boisson: aucune"];
         const paid = Math.max(0, total - 1);
         return [
             `Choix de boisson: ${selected.join(", ")}`,
@@ -683,8 +675,7 @@ function getAvailableAccessories(quota = getAccessoryQuota()) {
 }
 
 function getDefaultAccessoryQty(accessory, quota) {
-    if (accessory.id === "soy-sweet") return 0;
-    return quota[accessory.quota] || 0;
+    return 0;
 }
 
 function syncAccessoryDefaults() {
@@ -714,21 +705,30 @@ function syncAccessoryDefaults() {
     writeJson(ACCESSORY_DEFAULTS_KEY, accessoryDefaults);
 }
 
-function getAccessoryFreeQty(accessory, quota, sauceQty) {
+function getAccessoryFreeQty(accessory, quota) {
     const qty = accessories[accessory.id] || 0;
-    if (accessory.quota === "sauce") {
-        return Math.min(qty, Math.max(0, quota.sauce - Math.max(0, sauceQty - qty)));
+    const groupLimit = quota[accessory.quota] || 0;
+    const quotaGroup = ACCESSORIES.filter((candidate) => candidate.quota === accessory.quota);
+    if (quotaGroup.length <= 1) {
+        return Math.min(qty, groupLimit);
     }
-    return Math.min(qty, quota[accessory.quota] || 0);
+
+    let remaining = groupLimit;
+    for (const candidate of quotaGroup) {
+        const candidateQty = accessories[candidate.id] || 0;
+        const free = Math.min(candidateQty, remaining);
+        if (candidate.id === accessory.id) return free;
+        remaining -= free;
+    }
+    return 0;
 }
 
 function getAccessoryOverage() {
     const quota = getAccessoryQuota();
     const availableAccessories = getAvailableAccessories(quota);
-    const sauceQty = quota.hasEligibleItems ? (accessories["soy-salty"] || 0) + (accessories["soy-sweet"] || 0) : 0;
     return availableAccessories.reduce((sum, accessory) => {
         const qty = accessories[accessory.id] || 0;
-        const free = getAccessoryFreeQty(accessory, quota, sauceQty);
+        const free = getAccessoryFreeQty(accessory, quota);
         return sum + Math.max(0, qty - free);
     }, 0);
 }
@@ -801,16 +801,15 @@ function renderAccessories() {
     }
 
     cartAccessoriesSection.hidden = false;
-    const sauceQty = quota.hasEligibleItems ? (accessories["soy-salty"] || 0) + (accessories["soy-sweet"] || 0) : 0;
     const quotaNotes = [];
     quotaNotes.push(`${quota.baguettes} paire(s) de baguettes`);
     quotaNotes.push(`${quota.sauce} sauce soja au choix`);
     quotaNotes.push(`${quota.wasabi} wasabi`);
     quotaNotes.push(`${quota.gingembre} gingembre`);
-    accessoryQuotaText.textContent = `Quota gratuit: ${quotaNotes.join(", ")}. 1 quota offert par tranche entamée de 15€ de plats.`;
+    accessoryQuotaText.textContent = `Choisissez uniquement ce dont vous avez besoin. Quota gratuit: ${quotaNotes.join(", ")}. Au-delà, chaque supplément est facturé ${formatMoney(ACCESSORY_PRICE)}.`;
     accessoryItems.innerHTML = availableAccessories.map((accessory) => {
         const qty = accessories[accessory.id] || 0;
-        const free = getAccessoryFreeQty(accessory, quota, sauceQty);
+        const free = getAccessoryFreeQty(accessory, quota);
         const paid = Math.max(0, qty - free);
         return `
             <article class="accessory-line">
@@ -890,12 +889,11 @@ function getOrderReference() {
 function getSelectedAccessoryLines() {
     const quota = getAccessoryQuota();
     const availableAccessories = getAvailableAccessories(quota);
-    const sauceQty = quota.hasEligibleItems ? (accessories["soy-salty"] || 0) + (accessories["soy-sweet"] || 0) : 0;
     return availableAccessories
         .map((accessory) => {
             const qty = accessories[accessory.id] || 0;
             if (!qty) return null;
-            const free = getAccessoryFreeQty(accessory, quota, sauceQty);
+            const free = getAccessoryFreeQty(accessory, quota);
             const paid = Math.max(0, qty - free);
             const suffix = paid
                 ? `${free} gratuit(s), ${paid} supplement(s) ${formatMoney(paid * ACCESSORY_PRICE)}`
@@ -1502,6 +1500,11 @@ function renderModalOptions() {
         const drinks = getKidsDrinkOptions();
         const drinkCount = Object.values(modalCustomization.drinks || {}).reduce((sum, qty) => sum + qty, 0);
         const paid = Math.max(0, drinkCount - 1);
+        const drinkTotalLabel = !drinkCount
+            ? "Aucune boisson selectionnee"
+            : paid
+                ? `Supplement boissons: ${formatMoney(paid * KIDS_EXTRA_DRINK_PRICE)}`
+                : "1 boisson offerte incluse";
         const rows = drinks.map((drink) => {
             const id = getDrinkChoiceId(drink);
             const qty = modalCustomization.drinks[id] || 0;
@@ -1531,7 +1534,7 @@ function renderModalOptions() {
                 <div class="options-title">Choix de boisson</div>
                 <p class="custom-help">1 soft inclus. Au-delà: +${formatMoney(KIDS_EXTRA_DRINK_PRICE)} par boisson supplémentaire.</p>
                 <div class="custom-option-list custom-option-list-scroll">${rows}</div>
-                <strong class="custom-total">${paid ? `Supplément boissons: ${formatMoney(paid * KIDS_EXTRA_DRINK_PRICE)}` : "1 boisson offerte incluse"}</strong>
+                <strong class="custom-total">${drinkTotalLabel}</strong>
             </section>
         `;
         return;
@@ -1599,8 +1602,6 @@ function updateCustomizationQuantity(rawKey, delta) {
     if (type === "drink" && modalCustomization.type === "kids-drinks") {
         const current = modalCustomization.drinks[id] || 0;
         const next = Math.max(0, current + delta);
-        const currentTotal = Object.values(modalCustomization.drinks || {}).reduce((sum, qty) => sum + qty, 0);
-        if (currentTotal - current + next < 1) return;
         modalCustomization.drinks[id] = next;
     }
 
