@@ -96,7 +96,7 @@ const ZEN_WOK_VEGETABLES = [
     { id: "brocoli", label: "Brocoli" },
     { id: "champignons-paris", label: "Champignons de Paris" },
     { id: "germes-soja", label: "Germes de soja" },
-    { id: "poireaux", label: "Poireaux" },
+    { id: "poivrons", label: "Poivrons" },
     { id: "courgettes", label: "Courgettes" },
     { id: "carottes", label: "Carottes" },
     { id: "oignons", label: "Oignons" }
@@ -1329,23 +1329,42 @@ function makePlaceholder(label) {
     return `<div class="placeholder-art">${escapeHtml(label || "Zen Sushi Wok")}</div>`;
 }
 
-function inferAllergenes(item) {
+function inferAllergenes(item, category = "") {
+    if (Array.isArray(item.allergenes)) {
+        return item.allergenes.length ? item.allergenes : ["Aucun allergène majeur indiqué"];
+    }
+    if (category === "VINS") return ["Sulfites"];
+
     const text = `${item.name} ${item.composition} ${item.description}`.toLowerCase();
     const allergenes = [];
     const add = (label, pattern) => {
         if (pattern.test(text) && !allergenes.includes(label)) allergenes.push(label);
     };
+    const addIf = (label, condition) => {
+        if (condition && !allergenes.includes(label)) allergenes.push(label);
+    };
 
-    add("Poisson", /saumon|thon|poisson|sashimi|sushi|tataki/);
-    add("Crustacés", /crevette|crevettes|tempura|seiche|seiches/);
-    add("Gluten", /panko|corn flakes|pané|panée|tempura|nouilles|udon|gyoza|nems|cheesecake|beignet/);
-    add("Lait", /cheese|fromage|lait|cheesecake|mochi cream/);
+    add("Poisson", /saumon|thon|poisson|sashimi|tataki|sushi duo|zen salmon|zen love|zen dégustation|zen degustation|zen family|zen kids salmon/);
+    add("Crustacés", /crevette|crevettes|shrimp/);
+    add("Mollusques", /seiche|seiches/);
+    add("Gluten", /panko|corn flakes|pané|panée|tempura|gyoza|nems|beignet|raviolis|udon|cheesecake|bière|biere/);
+    add("Lait", /cheese|fromage|cheddar|café au lait|cafe au lait|mochi cream|cheesecake|lait(?! de coco)/);
     add("Sésame", /sésame|sesame/);
     add("Soja", /soja|tofu|edamame|miso|yakitori/);
-    add("Œufs", /mayonnaise|mayo/);
-    add("Sulfites", /vin rouge|vin blanc|vin rosé|bière/);
-
-    return allergenes.length ? allergenes : ["À confirmer"];
+    add("Œufs", /mayonnaise|mayo|cheesecake/);
+    add("Arachides", /cacahuète|cacahuetes|cacahuètes|arachide/);
+    add("Fruits à coque", /nougat|amande|noisette|pistache|noix/);
+    addIf("Œufs", /nougat/.test(text));
+    addIf("Lait", /mochi glacé|mochi glace/.test(text));
+    addIf("Sésame", category === "CHIRASHI" || category === "POKE BOWL" || category === "CRUSTY BOWL");
+    addIf("Soja", category === "POKE BOWL" || category === "ZEN WOK" || /^pad thai/i.test(item.name || ""));
+    addIf("Gluten", category === "CRUSTY BOWL" || category === "ZEN WOK");
+    addIf("Lait", category === "CRUSTY BOWL");
+    addIf("Arachides", category === "ZEN WOK" || /^pad thai/i.test(item.name || ""));
+    addIf("Crustacés", /assortiment de nems/i.test(item.name || ""));
+    addIf("Soja", /assortiment de brochettes|assortiment de gyoza/i.test(item.name || ""));
+    addIf("Lait", /assortiment de brochettes/i.test(item.name || ""));
+    return allergenes.length ? allergenes : ["Aucun allergène majeur indiqué"];
 }
 
 function isDrinkCategory(category) {
@@ -1679,7 +1698,7 @@ function openDishModal(item, category, cartEntry = null) {
     modalPieces.style.display = item.pieces ? "inline-flex" : "none";
     modalDescription.textContent = item.description || item.composition || "Détails à confirmer auprès du restaurant.";
     modalComposition.textContent = item.composition || "Composition à confirmer auprès du restaurant.";
-    modalAllergenes.innerHTML = inferAllergenes(item).map((label) => `<li>${escapeHtml(label)}</li>`).join("");
+    modalAllergenes.innerHTML = inferAllergenes(item, category).map((label) => `<li>${escapeHtml(label)}</li>`).join("");
     modal.classList.toggle("wine-modal", category === "VINS");
     modal.classList.toggle("drink-modal", category === "BOISSON");
     modal.classList.toggle("custom-modal", needsCustomization(category, item));

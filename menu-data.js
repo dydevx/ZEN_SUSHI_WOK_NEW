@@ -114,7 +114,7 @@ window.ZEN_CATEGORY_FOLDERS = {
 window.ZEN_CATEGORY_INTROS = {
     "ZEN WOK": {
         "title": "Jardin Asiatique du Chef",
-        "text": "Poêlée de légumes frais (brocoli, champignons de Paris, germes de soja, poivrons, poireaux, carottes, oignons), préparée à la minute et personnalisable selon vos envies."
+        "text": "Poêlée de légumes frais (brocoli, champignons de Paris, germes de soja, poivrons, courgettes, carottes, oignons), préparée à la minute et personnalisable selon vos envies."
     }
 };
 window.ZEN_MENU_DATA = {
@@ -211,16 +211,16 @@ window.ZEN_MENU_DATA = {
             "name": "Zen Kids Salmon",
             "price": "10",
             "pieces": "Menu enfant",
-            "composition": "Sushi saumon, riz et accompagnement doux.",
-            "description": "Une formule pensée pour les enfants, avec des saveurs simples et fondantes autour du saumon.",
+            "composition": "8 saumon roll cheese, 2 sushi saumon, 1 boisson au choix.",
+            "description": "Un assortiment fondant de saumon frais et cream cheese, accompagné de sushi saumon délicats.",
             "fileName": "sushi12.png"
         },
         {
             "name": "Zen Kids Yakitori",
             "price": "10",
             "pieces": "Menu enfant",
-            "composition": "Brochettes yakitori, riz et accompagnement doux.",
-            "description": "Une formule enfant gourmande autour du poulet yakitori, simple à déguster et généreuse.",
+            "composition": "3 yakitori, 1 portion de riz nature, 1 boisson au choix.",
+            "description": "Délicieuses brochettes de poulet grillées, nappées de sauce yakitori maison, accompagnées d’un riz nature doux et moelleux. Un plat savoureux et équilibré, parfait pour les enfants.",
             "fileName": "sushi13.png"
         }
     ],
@@ -1466,7 +1466,7 @@ window.ZEN_MENU_DATA = {
             "price": "12",
             "pieces": "",
             "composition": "Crevettes & Seiches",
-            "description": "Un duo de fruits de mer sauté au wok, généreux et parfumé.",
+            "description": "Un mélange gourmand de fruits de mer sauté au wok.",
             "fileName": "nouilles5.png"
         },
         {
@@ -1474,7 +1474,7 @@ window.ZEN_MENU_DATA = {
             "price": "12",
             "pieces": "",
             "composition": "Canard",
-            "description": "Canard savoureux dans un style sucré-salé généreux.",
+            "description": "Canard savoureux pour une touche sucrée-salée.",
             "fileName": "nouilles6.png"
         },
         {
@@ -1798,120 +1798,112 @@ window.ZEN_MENU_DATA = {
         {
             "name": "Evian",
             "price": "2,5",
-            "pieces": "",
-            "composition": "Evian",
-            "description": "Une sélection de boissons fraîches, dont des créations maison aux saveurs délicates.",
+            "pieces": "(50 cl)",
+            "composition": "Evian 50 cl",
+            "description": "Eau minérale naturelle, servie fraîche.",
             "fileName": "boisson5.png"
         },
         {
             "name": "San Pellegrino",
             "price": "2,5",
-            "pieces": "",
-            "composition": "San Pellegrino",
-            "description": "Une sélection de boissons fraîches, dont des créations maison aux saveurs délicates.",
+            "pieces": "(50 cl)",
+            "composition": "San Pellegrino 50 cl",
+            "description": "Eau pétillante, servie fraîche.",
             "fileName": "boisson6.png"
         },
         {
             "name": "Coca-Cola",
             "price": "2,5",
-            "pieces": "",
-            "composition": "Coca-Cola",
-            "description": "Une sélection de boissons fraîches, dont des créations maison aux saveurs délicates.",
+            "pieces": "(33 cl)",
+            "composition": "Coca-Cola 33 cl",
+            "description": "Boisson fraîche 33 cl.",
             "fileName": "boisson7.png"
         },
         {
             "name": "Coca-Cola Zero",
             "price": "2,5",
-            "pieces": "",
-            "composition": "Coca-Cola Zero",
-            "description": "Une sélection de boissons fraîches, dont des créations maison aux saveurs délicates.",
+            "pieces": "(33 cl)",
+            "composition": "Coca-Cola Zero 33 cl",
+            "description": "Boisson fraîche 33 cl.",
             "fileName": "boisson8.png"
         },
         {
             "name": "Sprite",
             "price": "2,5",
-            "pieces": "",
-            "composition": "Sprite",
-            "description": "Une sélection de boissons fraîches, dont des créations maison aux saveurs délicates.",
+            "pieces": "(33 cl)",
+            "composition": "Sprite 33 cl",
+            "description": "Boisson fraîche 33 cl.",
             "fileName": "boisson9.png"
         },
         {
             "name": "Oasis",
             "price": "2,5",
-            "pieces": "",
-            "composition": "Oasis",
-            "description": "Une sélection de boissons fraîches, dont des créations maison aux saveurs délicates.",
+            "pieces": "(33 cl)",
+            "composition": "Oasis 33 cl",
+            "description": "Boisson fraîche 33 cl.",
             "fileName": "boisson10.png"
         },
         {
             "name": "Lipton Ice Tea Pêche",
             "price": "2,5",
-            "pieces": "",
-            "composition": "Lipton Ice Tea Pêche",
-            "description": "Une sélection de boissons fraîches, dont des créations maison aux saveurs délicates.",
+            "pieces": "(33 cl)",
+            "composition": "Lipton Ice Tea Pêche 33 cl",
+            "description": "Boisson fraîche 33 cl.",
             "fileName": "boisson11.png"
         },
         {
             "name": "Orangina",
             "price": "2,5",
-            "pieces": "",
-            "composition": "Orangina",
-            "description": "Une sélection de boissons fraîches, dont des créations maison aux saveurs délicates.",
+            "pieces": "(33 cl)",
+            "composition": "Orangina 33 cl",
+            "description": "Boisson fraîche 33 cl.",
             "fileName": "boisson12.png"
         },
         {
             "name": "Nectar d’Orange",
             "price": "2,5",
-            "pieces": "",
-            "composition": "Nectar d’Orange",
-            "description": "Une sélection de boissons fraîches, dont des créations maison aux saveurs délicates.",
+            "pieces": "(33 cl)",
+            "composition": "Nectar d’Orange 33 cl",
+            "description": "Boisson fraîche 33 cl.",
             "fileName": "boisson13.png"
         },
         {
             "name": "Fuze Tea",
             "price": "2,5",
-            "pieces": "",
-            "composition": "Fuze Tea",
-            "description": "Une sélection de boissons fraîches, dont des créations maison aux saveurs délicates.",
+            "pieces": "(33 cl)",
+            "composition": "Fuze Tea 33 cl",
+            "description": "Boisson fraîche 33 cl.",
             "fileName": "boisson14.png"
         },
         {
-            "name": "mogu mogu",
-            "price": "3",
-            "pieces": "",
-            "composition": "Mogu mogu",
-            "description": "Une sélection de boissons fraîches, dont des créations maison aux saveurs délicates.",
+            "name": "Mogu Mogu",
+            "price": "3,5",
+            "pieces": "(32 cl)",
+            "composition": "Mogu Mogu 32 cl",
+            "description": "Boisson fraîche aux morceaux de nata de coco.",
             "fileName": "boisson15.png"
         },
         {
-            "name": "Minute Maid Pomme",
-            "price": "2,5",
-            "pieces": "",
-            "composition": "Minute Maid Pomme 33 cl",
-            "description": "Jus de pomme frais et fruité, servi bien frais.",
-            "fileName": "boisson19.png"
-        },
-        {
             "name": "Bière Asahi",
-            "price": "4,5",
-            "pieces": "",
-            "composition": "Bière Asahi",
+            "price": "4",
+            "pieces": "(33 cl)",
+            "composition": "Bière Asahi 33 cl",
             "description": "Bière japonaise légère et rafraîchissante.",
             "fileName": "boisson17.png"
         },
         {
             "name": "Bière Tsingtao",
-            "price": "4,5",
-            "pieces": "",
-            "composition": "Bière Tsingtao",
+            "price": "4",
+            "pieces": "(33 cl)",
+            "composition": "Bière Tsingtao 33 cl",
             "description": "Bière chinoise douce et équilibrée.",
             "fileName": "boisson18.png"
         },
         {
             "name": "Bière Corona Extra",
-            "price": "4,5",
-            "pieces": "",
-            "composition": "Bière Corona Extra",
+            "price": "5",
+            "pieces": "(35,5 cl)",
+            "composition": "Bière Corona Extra 35,5 cl",
             "description": "Bière blonde légère, fraîche et désaltérante.",
             "fileName": "boisson20.png"
         }
@@ -1920,72 +1912,72 @@ window.ZEN_MENU_DATA = {
         {
             "name": "Esprit Intense Blanc",
             "price": "16",
-            "pieces": "Vin blanc",
-            "composition": "Esprit Intense Blanc.",
+            "pieces": "(75 cl)",
+            "composition": "Esprit Intense Blanc (IGP Terres du Midi), bouteille 75 cl.",
             "description": "Vin blanc frais et souple, idéal pour accompagner sushi, sashimi et plats wok.",
             "fileName": "VIN BLANCS/1. Esprit Intense Blanc 16€.png"
         },
         {
             "name": "Chardonnay Ardèche - Gravettes",
             "price": "24",
-            "pieces": "Vin blanc",
-            "composition": "Chardonnay Ardèche - Gravettes.",
+            "pieces": "(75 cl)",
+            "composition": "Chardonnay Ardèche - Gravettes, bouteille 75 cl.",
             "description": "Chardonnay élégant, équilibré et gourmand.",
             "fileName": "VIN BLANCS/2. Chardonnay Ardèche – Gravettes  24€.png"
         },
         {
             "name": "Chablis - Domaine de Vivers",
             "price": "42",
-            "pieces": "Vin blanc",
-            "composition": "Chablis - Domaine de Vivers.",
+            "pieces": "(75 cl)",
+            "composition": "Chablis - Domaine de Vivers, bouteille 75 cl.",
             "description": "Vin blanc sec et minéral, avec une belle fraîcheur.",
             "fileName": "VIN BLANCS/3. Chablis – Domaine de Vivers 42€.png"
         },
         {
             "name": "Esprit Intense Rosé",
             "price": "16",
-            "pieces": "Vin rosé",
-            "composition": "Esprit Intense Rosé.",
+            "pieces": "(75 cl)",
+            "composition": "Esprit Intense Rosé (IGP Terres du Midi), bouteille 75 cl.",
             "description": "Rosé frais et fruité, facile à partager.",
             "fileName": "Vins rosés/1. Esprit Intense Rosé 16€.png"
         },
         {
             "name": "Les Secrets - Provence",
             "price": "24",
-            "pieces": "Vin rosé",
-            "composition": "Les Secrets - Provence.",
+            "pieces": "(75 cl)",
+            "composition": "Les Secrets - Provence, bouteille 75 cl.",
             "description": "Rosé de Provence fin, léger et aromatique.",
             "fileName": "Vins rosés/2. Les Secrets – Provence 24€.png"
         },
         {
             "name": "Minuty - Provence",
             "price": "34",
-            "pieces": "Vin rosé",
-            "composition": "Minuty - Provence.",
+            "pieces": "(75 cl)",
+            "composition": "Minuty - Provence, bouteille 75 cl.",
             "description": "Rosé de Provence élégant, vif et raffiné.",
             "fileName": "Vins rosés/3. Minuty – Provence 34€.png"
         },
         {
             "name": "Esprit Intense Rouge",
             "price": "16",
-            "pieces": "Vin rouge",
-            "composition": "Esprit Intense Rouge.",
+            "pieces": "(75 cl)",
+            "composition": "Esprit Intense Rouge (IGP Terres du Midi), bouteille 75 cl.",
             "description": "Rouge souple et fruité, agréable avec les plats chauds.",
             "fileName": "vins rouges/1. Esprit Intense Rouge 16€.png"
         },
         {
             "name": "Mithra - Côtes du Rhône",
             "price": "22",
-            "pieces": "Vin rouge",
-            "composition": "Mithra - Côtes du Rhône.",
+            "pieces": "(75 cl)",
+            "composition": "Mithra - Côtes du Rhône, bouteille 75 cl.",
             "description": "Côtes du Rhône rond et équilibré.",
             "fileName": "vins rouges/2. Mithra – Côtes du Rhône 22€.png"
         },
         {
-            "name": "Saint-Émilion - Vieux Cantenac",
+            "name": "Saint-Émilion - Château Vieux Cantenac",
             "price": "44",
-            "pieces": "Vin rouge",
-            "composition": "Saint-Émilion - Vieux Cantenac.",
+            "pieces": "(75 cl)",
+            "composition": "Saint-Émilion - Château Vieux Cantenac, bouteille 75 cl.",
             "description": "Saint-Émilion structuré, généreux et raffiné.",
             "fileName": "vins rouges/3. Saint-Émilion – Vieux Cantenac 44€.png"
         }
