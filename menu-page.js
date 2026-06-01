@@ -261,15 +261,25 @@ function getDishId(category, item) {
     return `${category}::${item.fileName || item.name}`;
 }
 
+function findMenuItemForCart(category, entryItem, baseId) {
+    return (menuData[category] || []).find((item) => (
+        getDishId(category, item) === baseId
+        || (entryItem.fileName && item.fileName === entryItem.fileName)
+        || item.name === entryItem.name
+    )) || entryItem;
+}
+
 function normalizeCartEntry(entry) {
     const category = entry.category || findCategoryForItem(entry.item);
     const baseId = entry.baseId || getDishId(category, entry.item);
+    const item = findMenuItemForCart(category, entry.item, baseId);
     return {
         ...entry,
+        item,
         category,
         baseId,
         qty: Math.max(0, Number(entry.qty) || 0),
-        customization: entry.customization || null
+        customization: needsCustomization(category, item) ? normalizeCustomization(category, item, entry.customization) : entry.customization || null
     };
 }
 
@@ -343,8 +353,25 @@ function isKidsMenu(item) {
     return /menu enfant/i.test(item.pieces || "") || /^Zen Kids/i.test(item.name || "");
 }
 
+function hasVariantChoices(item) {
+    return !!item && Array.isArray(item.variants) && item.variants.length > 0;
+}
+
+function getVariantById(item, id) {
+    return hasVariantChoices(item) ? item.variants.find((variant) => variant.id === id) : null;
+}
+
+function getDefaultVariant(item) {
+    return hasVariantChoices(item) ? item.variants[0] : null;
+}
+
+function getSelectedVariant(item, customization) {
+    if (!customization || customization.type !== "variant-choice") return getDefaultVariant(item);
+    return getVariantById(item, customization.variant) || getDefaultVariant(item);
+}
+
 function needsCustomization(category, item) {
-    return isFreshBowlCategory(category) || category === "ZEN WOK" || isKidsMenu(item);
+    return hasVariantChoices(item) || isFreshBowlCategory(category) || category === "ZEN WOK" || isKidsMenu(item);
 }
 
 function cloneCustomization(customization) {
@@ -365,6 +392,12 @@ function saveCustomization(category, item, customization) {
 
 function normalizeCustomization(category, item, customization = null) {
     if (!needsCustomization(category, item)) return null;
+
+    if (hasVariantChoices(item)) {
+        const sourceVariant = customization && customization.type === "variant-choice" ? customization.variant : "";
+        const variant = getVariantById(item, sourceVariant) || getDefaultVariant(item);
+        return { type: "variant-choice", variant: variant ? variant.id : "" };
+    }
 
     if (isFreshBowlCategory(category)) {
         const source = customization && customization.type === "fresh-supplements" ? customization.supplements || {} : {};
@@ -426,8 +459,13 @@ function getWokSupplementById(id) {
     return ZEN_WOK_SUPPLEMENTS.find((supplement) => supplement.id === id);
 }
 
-function getCustomizationCost(customization) {
+function getCustomizationCost(customization, item = null) {
     if (!customization) return 0;
+
+    if (customization.type === "variant-choice") {
+        const variant = item ? getSelectedVariant(item, customization) : null;
+        return variant ? parsePrice(variant.price) - parsePrice(item.price) : 0;
+    }
 
     if (customization.type === "fresh-supplements") {
         return Object.entries(customization.supplements || {}).reduce((sum, [id, qty]) => {
@@ -452,12 +490,16 @@ function getCustomizationCost(customization) {
 }
 
 function getEntryUnitPrice(entry) {
-    return parsePrice(entry.item.price) + getCustomizationCost(entry.customization);
+    return parsePrice(entry.item.price) + getCustomizationCost(entry.customization, entry.item);
 }
 
 function getCustomizationKey(category, item, customization) {
     const normalized = normalizeCustomization(category, item, customization);
     if (!normalized) return "standard";
+
+    if (normalized.type === "variant-choice") {
+        return `variant-${slugify(normalized.variant || "standard")}`;
+    }
 
     if (normalized.type === "fresh-supplements") {
         const selected = FRESH_BOWL_SUPPLEMENTS
@@ -599,8 +641,13 @@ function setCustomBaseQty(category, item, qty) {
     updateCart();
 }
 
-function getCustomizationSummary(customization) {
+function getCustomizationSummary(customization, item = null) {
     if (!customization) return [];
+
+    if (customization.type === "variant-choice") {
+        const variant = item ? getSelectedVariant(item, customization) : null;
+        return variant ? [`Choix: ${variant.label}`] : [];
+    }
 
     if (customization.type === "fresh-supplements") {
         const selected = FRESH_BOWL_SUPPLEMENTS
@@ -776,7 +823,7 @@ function renderCartItems() {
             <div>
                 <strong>${escapeHtml(entry.item.name)}</strong>
                 <span>${formatMoney(getEntryUnitPrice(entry))} / unité</span>
-                ${getCustomizationSummary(entry.customization).map((line) => `<span class="cart-option-line">${escapeHtml(line)}</span>`).join("")}
+                ${getCustomizationSummary(entry.customization, entry.item).map((line) => `<span class="cart-option-line">${escapeHtml(line)}</span>`).join("")}
                 ${entry.customization ? `<button class="cart-edit-button" type="button" data-edit-cart="${escapeHtml(entry.id)}">Modifier</button>` : ""}
             </div>
             <div class="qty-control compact">
@@ -931,7 +978,7 @@ function buildWhatsAppOrderMessage() {
         const unitPrice = getEntryUnitPrice(entry);
         lines.push(`${index + 1}. ${entry.item.name} x${entry.qty}`);
         if (entry.item.pieces) lines.push(`   ${entry.item.pieces}`);
-        getCustomizationSummary(entry.customization).forEach((line) => lines.push(`   ${line}`));
+        getCustomizationSummary(entry.customization, entry.item).forEach((line) => lines.push(`   ${line}`));
         lines.push(`   ${formatMoney(unitPrice)} / unite = ${formatMoney(unitPrice * entry.qty)}`);
     });
 
@@ -973,7 +1020,7 @@ function buildInvoiceDocument() {
         const unitPrice = getEntryUnitPrice(entry);
         const details = [
             entry.item.pieces,
-            ...getCustomizationSummary(entry.customization)
+            ...getCustomizationSummary(entry.customization, entry.item)
         ].filter(Boolean);
         return `
             <tr>
@@ -1336,6 +1383,7 @@ function inferAllergenes(item, category = "") {
     if (category === "VINS") return ["Sulfites"];
 
     const text = `${item.name} ${item.composition} ${item.description}`.toLowerCase();
+    const sesameSignatureFiles = new Set(["sig7.png", "sig8.png", "sig9.png", "sig11.png", "sig12.png"]);
     const allergenes = [];
     const add = (label, pattern) => {
         if (pattern.test(text) && !allergenes.includes(label)) allergenes.push(label);
@@ -1356,7 +1404,12 @@ function inferAllergenes(item, category = "") {
     add("Fruits à coque", /nougat|amande|noisette|pistache|noix/);
     addIf("Œufs", /nougat/.test(text));
     addIf("Lait", /mochi glacé|mochi glace/.test(text));
-    addIf("Sésame", category === "CHIRASHI" || category === "POKE BOWL" || category === "CRUSTY BOWL");
+    addIf(
+        "Sésame",
+        ["CALIFORNIA", "GUNKAN", "TEMAKI", "CHIRASHI", "POKE BOWL", "CRUSTY BOWL"].includes(category)
+            || (category === "PLATEAU" && /california|gunkan|temaki|poke|tartare|sésame|sesame/.test(text))
+            || (category === "SIGNATURES" && sesameSignatureFiles.has(item.fileName))
+    );
     addIf("Soja", category === "POKE BOWL" || category === "ZEN WOK" || /^pad thai/i.test(item.name || ""));
     addIf("Gluten", category === "CRUSTY BOWL" || category === "ZEN WOK");
     addIf("Lait", category === "CRUSTY BOWL");
@@ -1486,6 +1539,24 @@ function renderModalOptions() {
         return;
     }
 
+    if (modalCustomization.type === "variant-choice") {
+        const choices = (activeDish.variants || []).map((variant) => `
+            <label class="variant-choice-card">
+                <input type="radio" name="dishVariant" value="${escapeHtml(variant.id)}" data-variant-choice="${escapeHtml(variant.id)}" ${modalCustomization.variant === variant.id ? "checked" : ""}>
+                <span>${escapeHtml(variant.label)}</span>
+                <strong>${formatMoney(parsePrice(variant.price))}</strong>
+            </label>
+        `).join("");
+
+        modalOptionsBlock.innerHTML = `
+            <section class="custom-section">
+                <div class="options-title">Choix de gyoza</div>
+                <div class="variant-choice-grid">${choices}</div>
+            </section>
+        `;
+        return;
+    }
+
     if (modalCustomization.type === "fresh-supplements") {
         const rows = FRESH_BOWL_SUPPLEMENTS.map((supplement) => {
             const qty = modalCustomization.supplements[supplement.id] || 0;
@@ -1509,7 +1580,7 @@ function renderModalOptions() {
                 <div class="options-title">Suppléments</div>
                 <p class="custom-help">Ajoutez autant de suppléments que souhaité. Le total du plat se met à jour automatiquement.</p>
                 <div class="custom-option-list">${rows}</div>
-                <strong class="custom-total">Total suppléments: ${formatMoney(getCustomizationCost(modalCustomization))}</strong>
+                <strong class="custom-total">Total suppléments: ${formatMoney(getCustomizationCost(modalCustomization, activeDish))}</strong>
             </section>
         `;
         return;
@@ -1605,7 +1676,7 @@ function renderModalOptions() {
             <div class="choice-grid">${sideChoices}</div>
             <div class="options-title custom-subtitle">Suppléments</div>
             <div class="custom-option-list">${supplementRows}</div>
-            <strong class="custom-total">Total suppléments: ${formatMoney(getCustomizationCost(modalCustomization))}</strong>
+            <strong class="custom-total">Total suppléments: ${formatMoney(getCustomizationCost(modalCustomization, activeDish))}</strong>
         </section>
     `;
 }
@@ -1630,6 +1701,15 @@ function updateCustomizationQuantity(rawKey, delta) {
 
     modalCustomization = normalizeCustomization(activeCategory, activeDish, modalCustomization);
     renderModalOptions();
+    updateModalPriceAndAction();
+}
+
+function updateVariantCustomization(target) {
+    if (!modalCustomization || modalCustomization.type !== "variant-choice") return;
+    if (!target.matches("[data-variant-choice]") || !target.checked) return;
+
+    modalCustomization.variant = target.dataset.variantChoice;
+    modalCustomization = normalizeCustomization(activeCategory, activeDish, modalCustomization);
     updateModalPriceAndAction();
 }
 
@@ -1664,7 +1744,7 @@ function updateModalPriceAndAction() {
     const isCustom = needsCustomization(activeCategory, activeDish);
     const normalized = isCustom ? normalizeCustomization(activeCategory, activeDish, modalCustomization) : null;
     if (isCustom) modalCustomization = normalized;
-    const unitPrice = parsePrice(activeDish.price) + getCustomizationCost(normalized);
+    const unitPrice = parsePrice(activeDish.price) + getCustomizationCost(normalized, activeDish);
     modalPrice.textContent = isCustom ? formatMoney(unitPrice) : formatPrice(activeDish.price);
 
     let actionMarkup = "";
@@ -2110,6 +2190,10 @@ document.addEventListener("click", (event) => {
 });
 
 document.addEventListener("change", (event) => {
+    if (event.target.matches("[data-variant-choice]")) {
+        updateVariantCustomization(event.target);
+    }
+
     if (event.target.matches("[data-wok-veg], [data-wok-sauce], [data-wok-side]")) {
         updateWokCustomization(event.target);
     }

@@ -1541,7 +1541,12 @@ window.ZEN_MENU_DATA = {
             "pieces": "4 pièces",
             "composition": "Poulet ou veggie, ou bœuf.",
             "description": "Raviolis grillés, fondants à cœur et légèrement dorés.",
-            "fileName": "entre7.png"
+            "fileName": "entre7.png",
+            "variants": [
+                { "id": "poulet", "label": "Poulet", "price": 6.5 },
+                { "id": "veggie", "label": "Veggie", "price": 6.5 },
+                { "id": "boeuf", "label": "Bœuf", "price": 7.5 }
+            ]
         },
         {
             "name": "Assortiment de Gyoza (6 pièces)",
