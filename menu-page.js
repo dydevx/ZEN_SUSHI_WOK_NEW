@@ -64,6 +64,8 @@ const mobileMenuQuery = window.matchMedia("(max-width: 760px)");
 const WHATSAPP_ORDER_PHONE = "33763652285";
 const CUSTOMER_INFO_KEY = "zenCustomerInfo";
 const CHECKOUT_READY_MESSAGE = "Commande prete a envoyer sur WhatsApp.";
+const RESTAURANT_MAP_ORIGIN = "Zen Sushi Wok, 108 Bd du General de Gaulle, 06340 La Trinite, France";
+const DELIVERY_FEE_PENDING_LABEL = "A calculer";
 const DELIVERY_ZONES = [
     { max: 1.99, fee: 0, minimum: 15, eta: "25-35 min" },
     { max: 2.99, fee: 2, minimum: 25, eta: "30-40 min" },
@@ -117,7 +119,7 @@ let activeDish = null;
 let activeCategory = "";
 let toastTimer = null;
 let serviceMode = localStorage.getItem("zenServiceMode") || "delivery";
-let deliveryInfo = readJson("zenDeliveryInfo", null);
+let deliveryInfo = normalizeDeliveryInfo(readJson("zenDeliveryInfo", null));
 let cart = readJson("zenCartItems", []);
 let accessories = readJson("zenAccessories", {});
 let accessoryDefaults = readJson(ACCESSORY_DEFAULTS_KEY, {});
@@ -219,6 +221,51 @@ function escapeHtml(value) {
         "\"": "&quot;",
         "'": "&#039;"
     }[char]));
+}
+
+function buildGoogleMapsDirectionsUrl(destination) {
+    const params = new URLSearchParams({
+        api: "1",
+        origin: RESTAURANT_MAP_ORIGIN,
+        destination,
+        travelmode: "driving"
+    });
+    return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
+function createDeliveryInfo(address) {
+    const normalizedAddress = String(address || "").trim();
+    if (!normalizedAddress) return null;
+    return {
+        address: normalizedAddress,
+        mapUrl: buildGoogleMapsDirectionsUrl(normalizedAddress),
+        available: true,
+        needsConfirmation: true,
+        fee: null,
+        minimum: null,
+        eta: null,
+        distance: null
+    };
+}
+
+function normalizeDeliveryInfo(info) {
+    if (!info || !info.address) return null;
+    if (info.needsConfirmation === false && info.fee != null && Number.isFinite(Number(info.fee))) {
+        return {
+            ...info,
+            mapUrl: info.mapUrl || buildGoogleMapsDirectionsUrl(info.address)
+        };
+    }
+    return createDeliveryInfo(info.address);
+}
+
+function getDeliveryMapUrl(address) {
+    const normalizedAddress = String(address || "").trim();
+    if (!normalizedAddress) return "";
+    if (deliveryInfo && deliveryInfo.address === normalizedAddress && deliveryInfo.mapUrl) {
+        return deliveryInfo.mapUrl;
+    }
+    return buildGoogleMapsDirectionsUrl(normalizedAddress);
 }
 
 function normalizeMenuGroups(groups, fallbackCategories) {
@@ -780,8 +827,22 @@ function getAccessoryOverage() {
     }, 0);
 }
 
+function hasConfirmedDeliveryFee() {
+    return serviceMode === "delivery"
+        && deliveryInfo
+        && deliveryInfo.available
+        && deliveryInfo.needsConfirmation !== true
+        && deliveryInfo.fee != null
+        && Number.isFinite(Number(deliveryInfo.fee));
+}
+
 function getDeliveryFee() {
-    return serviceMode === "delivery" && deliveryInfo && deliveryInfo.available ? deliveryInfo.fee : 0;
+    return hasConfirmedDeliveryFee() ? Number(deliveryInfo.fee) : 0;
+}
+
+function getDeliveryLabel() {
+    if (serviceMode !== "delivery") return formatMoney(0);
+    return hasConfirmedDeliveryFee() ? formatMoney(getDeliveryFee()) : DELIVERY_FEE_PENDING_LABEL;
 }
 
 function getGrandTotal() {
@@ -802,7 +863,7 @@ function updateCart() {
     cartPanelTotal.textContent = formatMoney(grandTotal);
     cartFoodTotal.textContent = formatMoney(foodTotal);
     cartAccessoryTotal.textContent = formatMoney(accessoryTotal);
-    cartDeliveryFee.textContent = deliveryFee ? formatMoney(deliveryFee) : (serviceMode === "delivery" ? "À calculer" : "0,00€");
+    cartDeliveryFee.textContent = getDeliveryLabel();
     cartGrandTotal.textContent = formatMoney(grandTotal);
 
     renderCartItems();
@@ -890,7 +951,17 @@ function renderCartServiceSummary() {
         return;
     }
 
-    cartServiceSummary.innerHTML = `<strong>Livraison</strong><span>${deliveryInfo.distance.toFixed(1)} km - frais ${formatMoney(deliveryInfo.fee)} - minimum ${formatMoney(deliveryInfo.minimum)} - ${deliveryInfo.eta}</span>`;
+    if (deliveryInfo.needsConfirmation) {
+        const mapLink = deliveryInfo.mapUrl
+            ? `<a class="delivery-map-link" href="${escapeHtml(deliveryInfo.mapUrl)}" target="_blank" rel="noopener">Verifier sur Google Maps</a>`
+            : "";
+        cartServiceSummary.innerHTML = `<strong>Livraison</strong><span>Frais a confirmer par le restaurant via Google Maps.</span>${mapLink}`;
+        return;
+    }
+
+    const distanceLabel = deliveryInfo.distance != null ? `${Number(deliveryInfo.distance).toFixed(1)} km` : "Distance a confirmer";
+    const minimumLabel = deliveryInfo.minimum != null ? formatMoney(deliveryInfo.minimum) : "-";
+    cartServiceSummary.innerHTML = `<strong>Livraison</strong><span>${distanceLabel} - frais ${formatMoney(deliveryInfo.fee)} - minimum ${minimumLabel} - ${deliveryInfo.eta || "-"}</span>`;
 }
 
 function getCustomerValidationMessage() {
@@ -914,7 +985,7 @@ function updateCheckoutMessage() {
         message = customerMessage;
     } else if (serviceMode === "delivery" && deliveryInfo && !deliveryInfo.available) {
         message = "Zone non desservie actuellement.";
-    } else if (serviceMode === "delivery" && deliveryInfo && foodTotal < deliveryInfo.minimum) {
+    } else if (serviceMode === "delivery" && deliveryInfo && deliveryInfo.minimum != null && foodTotal < deliveryInfo.minimum) {
         message = `Montant minimum pour cette zone : ${formatMoney(deliveryInfo.minimum)}. Il manque ${formatMoney(deliveryInfo.minimum - foodTotal)}.`;
     } else {
         message = CHECKOUT_READY_MESSAGE;
@@ -955,9 +1026,8 @@ function buildWhatsAppOrderMessage() {
     const foodTotal = getFoodTotal();
     const accessoryTotal = getAccessoryOverage() * ACCESSORY_PRICE;
     const deliveryFee = getDeliveryFee();
-    const deliveryLabel = serviceMode === "delivery"
-        ? (deliveryInfo && deliveryInfo.available ? formatMoney(deliveryFee) : "A calculer")
-        : "0,00€";
+    const deliveryLabel = getDeliveryLabel();
+    const deliveryMapUrl = serviceMode === "delivery" ? getDeliveryMapUrl(info.address) : "";
     const serviceLabel = serviceMode === "pickup" ? "A emporter" : "Livraison";
     const lines = [
         "ZEN SUSHI WOK - Nouvelle commande",
@@ -987,8 +1057,12 @@ function buildWhatsAppOrderMessage() {
         lines.push("", "ACCESSOIRES", ...accessoryLines);
     }
 
-    if (serviceMode === "delivery" && deliveryInfo && deliveryInfo.available) {
-        lines.push("", "LIVRAISON", `${deliveryInfo.distance.toFixed(1)} km - ${deliveryInfo.eta} - minimum ${formatMoney(deliveryInfo.minimum)}`);
+    if (serviceMode === "delivery") {
+        lines.push("", "LIVRAISON", `Frais: ${deliveryLabel}`);
+        if (deliveryInfo && deliveryInfo.available && deliveryInfo.needsConfirmation !== true && deliveryInfo.distance != null) {
+            lines.push(`${Number(deliveryInfo.distance).toFixed(1)} km - ${deliveryInfo.eta || "-"} - minimum ${deliveryInfo.minimum != null ? formatMoney(deliveryInfo.minimum) : "-"}`);
+        }
+        if (deliveryMapUrl) lines.push(`Lien Google Maps: ${deliveryMapUrl}`);
     }
 
     lines.push(
@@ -997,7 +1071,7 @@ function buildWhatsAppOrderMessage() {
         `Plats: ${formatMoney(foodTotal)}`,
         `Accessoires: ${formatMoney(accessoryTotal)}`,
         `Livraison: ${deliveryLabel}`,
-        `Total: ${formatMoney(foodTotal + accessoryTotal + deliveryFee)}${deliveryLabel === "A calculer" ? " + livraison" : ""}`
+        `Total: ${formatMoney(foodTotal + accessoryTotal + deliveryFee)}${deliveryLabel === DELIVERY_FEE_PENDING_LABEL ? " + livraison" : ""}`
     );
 
     return lines.join("\n");
@@ -1009,9 +1083,8 @@ function buildInvoiceDocument() {
     const accessoryTotal = getAccessoryOverage() * ACCESSORY_PRICE;
     const deliveryFee = getDeliveryFee();
     const grandTotal = foodTotal + accessoryTotal + deliveryFee;
-    const deliveryLabel = serviceMode === "delivery"
-        ? (deliveryInfo && deliveryInfo.available ? formatMoney(deliveryFee) : "A calculer")
-        : "0,00€";
+    const deliveryLabel = getDeliveryLabel();
+    const deliveryMapUrl = serviceMode === "delivery" ? getDeliveryMapUrl(info.address) : "";
     const serviceLabel = serviceMode === "pickup" ? "A emporter" : "Livraison";
     const reference = getOrderReference();
     const createdAt = new Date().toLocaleString("fr-FR");
@@ -1133,6 +1206,10 @@ function buildInvoiceDocument() {
             letter-spacing: 0.6px;
             text-transform: uppercase;
         }
+        .box a {
+            color: #d83a2e;
+            font-weight: 800;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -1248,7 +1325,8 @@ function buildInvoiceDocument() {
                 <h2>Service</h2>
                 <p><strong>${serviceLabel}</strong></p>
                 <p>Livraison: ${deliveryLabel}</p>
-                ${serviceMode === "delivery" && deliveryInfo && deliveryInfo.available ? `<p>${deliveryInfo.distance.toFixed(1)} km - ${escapeHtml(deliveryInfo.eta)}</p>` : ""}
+                ${serviceMode === "delivery" && deliveryInfo && deliveryInfo.available && deliveryInfo.needsConfirmation !== true && deliveryInfo.distance != null ? `<p>${Number(deliveryInfo.distance).toFixed(1)} km - ${escapeHtml(deliveryInfo.eta || "")}</p>` : ""}
+                ${deliveryMapUrl ? `<p><a href="${escapeHtml(deliveryMapUrl)}" target="_blank" rel="noopener">Verifier sur Google Maps</a></p>` : ""}
             </div>
         </section>
         <section class="summary">
@@ -1270,7 +1348,7 @@ function buildInvoiceDocument() {
             <div class="total-row"><span>Plats</span><strong>${formatMoney(foodTotal)}</strong></div>
             <div class="total-row"><span>Accessoires</span><strong>${formatMoney(accessoryTotal)}</strong></div>
             <div class="total-row"><span>Livraison</span><strong>${deliveryLabel}</strong></div>
-            <div class="total-row grand"><span>Total</span><strong>${formatMoney(grandTotal)}${deliveryLabel === "A calculer" ? " + livraison" : ""}</strong></div>
+            <div class="total-row grand"><span>Total</span><strong>${formatMoney(grandTotal)}${deliveryLabel === DELIVERY_FEE_PENDING_LABEL ? " + livraison" : ""}</strong></div>
         </section>
         <p class="note">Document généré depuis le site Zen Sushi Wok. Les prix, disponibilités et frais de livraison restent à confirmer par le restaurant.</p>
     </main>
@@ -2033,45 +2111,28 @@ function applyServiceMode(mode) {
 }
 
 function estimateDelivery() {
-    const value = (customerAddressInput && customerAddressInput.value ? customerAddressInput.value : deliveryAddress.value).trim();
+    const value = (customerAddressInput && customerAddressInput.value ? customerAddressInput.value : (deliveryAddress ? deliveryAddress.value : "")).trim();
     if (deliveryAddress) deliveryAddress.value = value;
     if (customerAddressInput) customerAddressInput.value = value;
     saveCustomerInfo();
     if (!value) {
         deliveryInfo = null;
-        deliveryResult.hidden = true;
-        deliveryMessage.textContent = "Entrez une adresse pour calculer la zone, les frais et le minimum de commande.";
+        if (deliveryResult) deliveryResult.hidden = true;
+        if (deliveryMessage) deliveryMessage.textContent = "Entrez une adresse pour generer le lien Google Maps et confirmer les frais de livraison.";
         writeJson("zenDeliveryInfo", deliveryInfo);
         updateCart();
         return;
     }
 
-    const postcode = value.match(/\b\d{5}\b/);
-    let distance = 2.4;
-    if (postcode) {
-        const tail = Number(postcode[0].slice(-2));
-        distance = 0.8 + (tail % 8) * 0.75;
-    } else {
-        distance = 1.5 + Math.min(5.5, value.length / 14);
-    }
-
-    const zone = DELIVERY_ZONES.find((item) => distance <= item.max);
-    deliveryInfo = zone
-        ? { address: value, distance, fee: zone.fee, minimum: zone.minimum, eta: zone.eta, available: true }
-        : { address: value, distance, available: false };
-
+    deliveryInfo = createDeliveryInfo(value);
     writeJson("zenDeliveryInfo", deliveryInfo);
-    if (!deliveryInfo.available) {
-        deliveryMessage.textContent = "Zone non desservie actuellement.";
-        deliveryResult.hidden = true;
-    } else {
-        deliveryMessage.textContent = "Adresse vérifiée.";
+    if (deliveryMessage) deliveryMessage.textContent = "Adresse enregistree. Frais de livraison a confirmer via Google Maps.";
+    if (deliveryResult && deliveryInfo) {
         deliveryResult.hidden = false;
         deliveryResult.innerHTML = `
-            <span>${deliveryInfo.distance.toFixed(1)} km</span>
-            <span>Frais: ${formatMoney(deliveryInfo.fee)}</span>
-            <span>Minimum: ${formatMoney(deliveryInfo.minimum)}</span>
-            <span>${deliveryInfo.eta}</span>
+            <span>Adresse enregistree</span>
+            <span>Frais: ${DELIVERY_FEE_PENDING_LABEL}</span>
+            <a class="delivery-map-link" href="${escapeHtml(deliveryInfo.mapUrl)}" target="_blank" rel="noopener">Google Maps</a>
         `;
     }
     updateCart();
