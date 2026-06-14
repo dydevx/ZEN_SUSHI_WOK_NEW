@@ -47,6 +47,7 @@ const productRails = document.getElementById("productRails");
 const deliveryAddress = document.getElementById("deliveryAddress");
 const deliveryMessage = document.getElementById("deliveryMessage");
 const deliveryResult = document.getElementById("deliveryResult");
+const addressSuggestions = document.getElementById("addressSuggestions");
 const checkDeliveryButton = document.getElementById("checkDeliveryButton");
 const serviceButtons = document.querySelectorAll("[data-service-mode]");
 const deliveryPanel = document.getElementById("deliveryPanel");
@@ -67,10 +68,10 @@ const CHECKOUT_READY_MESSAGE = "Commande prete a envoyer sur WhatsApp.";
 const RESTAURANT_MAP_ORIGIN = "Zen Sushi Wok, 108 Bd du General de Gaulle, 06340 La Trinite, France";
 const DELIVERY_FEE_PENDING_LABEL = "A calculer";
 const DELIVERY_ZONES = [
-    { max: 1.99, fee: 0, minimum: 15, eta: "25-35 min" },
+    { max: 1, fee: 0, minimum: 15, eta: "25-35 min" },
     { max: 2.99, fee: 2, minimum: 25, eta: "30-40 min" },
     { max: 4.99, fee: 3, minimum: 35, eta: "35-50 min" },
-    { max: 7.5, fee: 5, minimum: 45, eta: "45-60 min" }
+    { max: Infinity, fee: 5, minimum: 45, eta: "45-60 min" }
 ];
 const ACCESSORY_PRICE = 0.5;
 const ACCESSORY_DEFAULTS_KEY = "zenAccessoryDefaults";
@@ -128,6 +129,8 @@ let selectedGroupItems = new Map();
 let modalCustomization = null;
 let modalEditingEntryId = "";
 let currentOrderReference = "";
+let selectedDeliveryPlaceId = deliveryInfo && deliveryInfo.placeId ? deliveryInfo.placeId : "";
+let addressSuggestTimer = null;
 
 cart = cart.filter((entry) => entry && entry.id && entry.item && entry.qty > 0).map(normalizeCartEntry);
 initCustomerFields();
@@ -204,9 +207,11 @@ function initCustomerFields() {
             if (customerAddressInput) customerAddressInput.value = deliveryAddress.value;
             if (deliveryInfo && deliveryInfo.address !== deliveryAddress.value.trim()) {
                 deliveryInfo = null;
+                selectedDeliveryPlaceId = "";
                 writeJson("zenDeliveryInfo", deliveryInfo);
                 if (deliveryResult) deliveryResult.hidden = true;
             }
+            queueAddressSuggestions(deliveryAddress.value);
             saveCustomerInfo();
             updateCart();
         });
@@ -244,7 +249,8 @@ function createDeliveryInfo(address) {
         fee: null,
         minimum: null,
         eta: null,
-        distance: null
+        distance: null,
+        placeId: ""
     };
 }
 
@@ -253,6 +259,9 @@ function normalizeDeliveryInfo(info) {
     if (info.needsConfirmation === false && info.fee != null && Number.isFinite(Number(info.fee))) {
         return {
             ...info,
+            distance: info.distance != null ? Number(info.distance) : null,
+            minimum: info.minimum != null ? Number(info.minimum) : null,
+            fee: Number(info.fee),
             mapUrl: info.mapUrl || buildGoogleMapsDirectionsUrl(info.address)
         };
     }
@@ -266,6 +275,112 @@ function getDeliveryMapUrl(address) {
         return deliveryInfo.mapUrl;
     }
     return buildGoogleMapsDirectionsUrl(normalizedAddress);
+}
+
+function hideAddressSuggestions() {
+    if (!addressSuggestions) return;
+    addressSuggestions.hidden = true;
+    addressSuggestions.innerHTML = "";
+}
+
+function renderAddressSuggestions(suggestions) {
+    if (!addressSuggestions) return;
+    if (!suggestions.length) {
+        hideAddressSuggestions();
+        return;
+    }
+    addressSuggestions.innerHTML = suggestions.map((suggestion) => `
+        <button type="button" data-place-id="${escapeHtml(suggestion.placeId)}" data-place-text="${escapeHtml(suggestion.text)}">
+            ${escapeHtml(suggestion.text)}
+        </button>
+    `).join("");
+    addressSuggestions.hidden = false;
+}
+
+function queueAddressSuggestions(value) {
+    clearTimeout(addressSuggestTimer);
+    const input = String(value || "").trim();
+    if (input.length < 3) {
+        hideAddressSuggestions();
+        return;
+    }
+    addressSuggestTimer = setTimeout(() => fetchAddressSuggestions(input), 260);
+}
+
+async function fetchAddressSuggestions(input) {
+    try {
+        const response = await fetch("/api/places/autocomplete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ input })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Autocomplete indisponible.");
+        renderAddressSuggestions(data.suggestions || []);
+    } catch (error) {
+        hideAddressSuggestions();
+    }
+}
+
+function deliveryInfoFromEstimate(data) {
+    if (!data || !data.available) {
+        return {
+            address: data && data.address ? data.address : (deliveryAddress ? deliveryAddress.value.trim() : ""),
+            mapUrl: data && data.address ? buildGoogleMapsDirectionsUrl(data.address) : "",
+            available: false,
+            needsConfirmation: false,
+            fee: null,
+            minimum: null,
+            eta: null,
+            distance: data && data.distance != null ? Number(data.distance) : null,
+            placeId: selectedDeliveryPlaceId,
+            provider: data && data.provider ? data.provider : "osm"
+        };
+    }
+
+    return {
+        address: data.address,
+        mapUrl: data.mapUrl || buildGoogleMapsDirectionsUrl(data.address),
+        available: true,
+        needsConfirmation: false,
+        fee: Number(data.fee),
+        minimum: Number(data.minimum),
+        eta: data.eta || (data.etaMinutes ? `${data.etaMinutes} min` : "A confirmer"),
+        etaMinutes: data.etaMinutes || null,
+        distance: Number(data.distance),
+        distanceMeters: data.distanceMeters || null,
+        placeId: data.placeId || selectedDeliveryPlaceId,
+        provider: data.provider || "osm"
+    };
+}
+
+function renderDeliveryResult() {
+    if (!deliveryResult) return;
+    if (!deliveryInfo) {
+        deliveryResult.hidden = true;
+        deliveryResult.innerHTML = "";
+        return;
+    }
+
+    deliveryResult.hidden = false;
+    if (!deliveryInfo.available) {
+        deliveryResult.innerHTML = `
+            <span class="full">Zone non desservie actuellement.</span>
+            ${deliveryInfo.address ? `<span class="full">Adresse: ${escapeHtml(deliveryInfo.address)}</span>` : ""}
+        `;
+        return;
+    }
+
+    const distanceLabel = deliveryInfo.distance != null ? `${Number(deliveryInfo.distance).toFixed(2).replace(".", ",")} km` : "A confirmer";
+    const providerLabel = deliveryInfo.provider === "google" ? "Google Maps" : "OpenStreetMap/OSRM";
+    deliveryResult.innerHTML = `
+        <span class="full">Adresse livraison: ${escapeHtml(deliveryInfo.address)}</span>
+        <span>Distance ${providerLabel}: ${distanceLabel}</span>
+        <span>Frais de livraison: ${formatMoney(deliveryInfo.fee)}</span>
+        <span>Minimum commande: ${formatMoney(deliveryInfo.minimum)}</span>
+        <span>Temps estimé livraison: ${escapeHtml(deliveryInfo.eta || "A confirmer")}</span>
+        <a class="delivery-map-link full" href="${escapeHtml(deliveryInfo.mapUrl)}" target="_blank" rel="noopener">Voir l'itinéraire</a>
+    `;
 }
 
 function normalizeMenuGroups(groups, fallbackCategories) {
@@ -937,12 +1052,12 @@ function renderAccessories() {
 
 function renderCartServiceSummary() {
     if (serviceMode === "pickup") {
-        cartServiceSummary.innerHTML = `<strong>À emporter</strong><span>Retrait au restaurant. Adresse et horaires à confirmer.</span>`;
+        cartServiceSummary.innerHTML = `<strong>À emporter</strong><span>ZEN SUSHI WOK - 108 Boulevard du Général de Gaulle, 06340 La Trinité - 07 63 65 22 85</span>`;
         return;
     }
 
     if (!deliveryInfo) {
-        cartServiceSummary.innerHTML = `<strong>Livraison</strong><span>Adresse et frais de livraison transmis sur WhatsApp; frais à calculer par le restaurant.</span>`;
+        cartServiceSummary.innerHTML = `<strong>Livraison</strong><span>Veuillez vérifier l'adresse pour calculer les frais de livraison.</span>`;
         return;
     }
 
@@ -955,7 +1070,7 @@ function renderCartServiceSummary() {
         const mapLink = deliveryInfo.mapUrl
             ? `<a class="delivery-map-link" href="${escapeHtml(deliveryInfo.mapUrl)}" target="_blank" rel="noopener">Verifier sur Google Maps</a>`
             : "";
-        cartServiceSummary.innerHTML = `<strong>Livraison</strong><span>Frais a confirmer par le restaurant via Google Maps.</span>${mapLink}`;
+        cartServiceSummary.innerHTML = `<strong>Livraison</strong><span>Veuillez vérifier l'adresse pour calculer les frais de livraison.</span>${mapLink}`;
         return;
     }
 
@@ -970,6 +1085,8 @@ function getCustomerValidationMessage() {
     if (!info.name) return "Veuillez indiquer le nom du client.";
     if (!info.phone) return "Veuillez indiquer le telephone du client.";
     if (serviceMode === "delivery" && !info.address) return "Veuillez indiquer l'adresse de livraison.";
+    if (serviceMode === "delivery" && !deliveryInfo) return "Veuillez verifier l'adresse de livraison.";
+    if (serviceMode === "delivery" && deliveryInfo.needsConfirmation) return "Veuillez verifier l'adresse de livraison.";
     if (info.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(info.email)) return "Veuillez verifier l'email du client.";
     return "";
 }
@@ -2107,10 +2224,12 @@ function applyServiceMode(mode) {
     serviceButtons.forEach((button) => button.classList.toggle("active", button.dataset.serviceMode === mode));
     if (deliveryPanel) deliveryPanel.hidden = mode !== "delivery";
     if (pickupPanel) pickupPanel.hidden = mode !== "pickup";
+    if (mode === "delivery") renderDeliveryResult();
+    else hideAddressSuggestions();
     updateCart();
 }
 
-function estimateDelivery() {
+async function estimateDelivery() {
     const value = (customerAddressInput && customerAddressInput.value ? customerAddressInput.value : (deliveryAddress ? deliveryAddress.value : "")).trim();
     if (deliveryAddress) deliveryAddress.value = value;
     if (customerAddressInput) customerAddressInput.value = value;
@@ -2118,24 +2237,46 @@ function estimateDelivery() {
     if (!value) {
         deliveryInfo = null;
         if (deliveryResult) deliveryResult.hidden = true;
-        if (deliveryMessage) deliveryMessage.textContent = "Entrez une adresse pour generer le lien Google Maps et confirmer les frais de livraison.";
+        if (deliveryMessage) deliveryMessage.textContent = "Entrez une adresse et choisissez une suggestion pour calculer les frais.";
         writeJson("zenDeliveryInfo", deliveryInfo);
         updateCart();
         return;
     }
 
-    deliveryInfo = createDeliveryInfo(value);
-    writeJson("zenDeliveryInfo", deliveryInfo);
-    if (deliveryMessage) deliveryMessage.textContent = "Adresse enregistree. Frais de livraison a confirmer via Google Maps.";
-    if (deliveryResult && deliveryInfo) {
-        deliveryResult.hidden = false;
-        deliveryResult.innerHTML = `
-            <span>Adresse enregistree</span>
-            <span>Frais: ${DELIVERY_FEE_PENDING_LABEL}</span>
-            <a class="delivery-map-link" href="${escapeHtml(deliveryInfo.mapUrl)}" target="_blank" rel="noopener">Google Maps</a>
-        `;
+    hideAddressSuggestions();
+    if (deliveryMessage) deliveryMessage.textContent = "Calcul de la distance par itinéraire...";
+    if (checkDeliveryButton) checkDeliveryButton.disabled = true;
+
+    try {
+        const response = await fetch("/api/delivery/estimate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ address: value, placeId: selectedDeliveryPlaceId })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Calcul livraison indisponible.");
+
+        deliveryInfo = deliveryInfoFromEstimate(data);
+        if (customerAddressInput) customerAddressInput.value = deliveryInfo.address || value;
+        if (deliveryAddress) deliveryAddress.value = deliveryInfo.address || value;
+        selectedDeliveryPlaceId = deliveryInfo.placeId || selectedDeliveryPlaceId;
+        writeJson("zenDeliveryInfo", deliveryInfo);
+        saveCustomerInfo();
+        renderDeliveryResult();
+        if (deliveryMessage) {
+            deliveryMessage.textContent = deliveryInfo.available
+                ? "Adresse vérifiée. Les frais de livraison sont ajoutés au panier."
+                : (data.message || "Zone non desservie actuellement.");
+        }
+    } catch (error) {
+        deliveryInfo = null;
+        writeJson("zenDeliveryInfo", deliveryInfo);
+        if (deliveryResult) deliveryResult.hidden = true;
+        if (deliveryMessage) deliveryMessage.textContent = error.message || "Impossible de calculer la livraison.";
+    } finally {
+        if (checkDeliveryButton) checkDeliveryButton.disabled = false;
+        updateCart();
     }
-    updateCart();
 }
 
 function openCart() {
@@ -2178,6 +2319,24 @@ document.addEventListener("click", (event) => {
     const customDecButton = event.target.closest("[data-custom-dec]");
     const railNext = event.target.closest("[data-rail-next]");
     const railPrev = event.target.closest("[data-rail-prev]");
+    const suggestionButton = event.target.closest("[data-place-id]");
+
+    if (suggestionButton) {
+        selectedDeliveryPlaceId = suggestionButton.dataset.placeId || "";
+        const text = suggestionButton.dataset.placeText || suggestionButton.textContent.trim();
+        if (deliveryAddress) deliveryAddress.value = text;
+        if (customerAddressInput) customerAddressInput.value = text;
+        deliveryInfo = null;
+        writeJson("zenDeliveryInfo", deliveryInfo);
+        hideAddressSuggestions();
+        saveCustomerInfo();
+        updateCart();
+        return;
+    }
+
+    if (addressSuggestions && !event.target.closest(".delivery-input-wrap")) {
+        hideAddressSuggestions();
+    }
 
     if (customIncButton || customDecButton) {
         updateCustomizationQuantity((customIncButton || customDecButton).dataset.customInc || (customIncButton || customDecButton).dataset.customDec, customIncButton ? 1 : -1);

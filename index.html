@@ -756,22 +756,25 @@
                 <div class="service-mode-content" id="deliveryPanel">
                     <label for="deliveryAddress">Adresse ou postcode de livraison</label>
                     <div class="delivery-search">
-                        <input id="deliveryAddress" type="text" placeholder="Ex: 06000 Nice ou votre adresse">
+                        <div class="delivery-input-wrap">
+                            <input id="deliveryAddress" type="text" placeholder="Ex: 12 rue..., 06340 La Trinité" autocomplete="off">
+                            <div class="address-suggestions" id="addressSuggestions" hidden></div>
+                        </div>
                         <button type="button" id="checkDeliveryButton">Vérifier</button>
                     </div>
-                    <p class="delivery-message" id="deliveryMessage">Entrez une adresse pour generer le lien Google Maps et confirmer les frais de livraison.</p>
+                    <p class="delivery-message" id="deliveryMessage">Entrez une adresse et choisissez une suggestion pour calculer les frais.</p>
                     <div class="delivery-result" id="deliveryResult" hidden></div>
                 </div>
                 <div class="service-mode-content" id="pickupPanel" hidden>
                     <div class="pickup-card">
-                        <p><i class="fa-solid fa-location-dot"></i><span id="restaurantAddress">Adresse du restaurant à confirmer</span></p>
-                        <p><i class="fa-solid fa-phone"></i><span id="restaurantPhone">Téléphone à confirmer</span></p>
-                        <p><i class="fa-solid fa-clock"></i><span>Horaires à confirmer auprès du restaurant</span></p>
+                        <p><i class="fa-solid fa-location-dot"></i><span id="restaurantAddress"><strong>ZEN SUSHI WOK</strong><br>108 Boulevard du Général de Gaulle, 06340 La Trinité</span></p>
+                        <p><i class="fa-solid fa-phone"></i><span id="restaurantPhone">07 63 65 22 85</span></p>
+                        <p><i class="fa-solid fa-clock"></i><span>11h30 - 14h30 et 18h00 - 22h00 (mardi au dimanche)</span></p>
                     </div>
                     <div class="pickup-actions">
-                        <a href="https://maps.app.goo.gl/z8XP9eGj8XR6oUg16" target="_blank" rel="noopener">Voir l'itinéraire</a>
-                        <a href="https://maps.app.goo.gl/z8XP9eGj8XR6oUg16" target="_blank" rel="noopener">Google Maps</a>
-                        <a href="tel:" id="restaurantCallLink">Appeler</a>
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=ZEN%20SUSHI%20WOK%20108%20Boulevard%20du%20G%C3%A9n%C3%A9ral%20de%20Gaulle%2006340%20La%20Trinit%C3%A9" target="_blank" rel="noopener">Voir l'itinéraire</a>
+                        <a href="https://www.google.com/maps/search/?api=1&query=ZEN%20SUSHI%20WOK%20108%20Boulevard%20du%20G%C3%A9n%C3%A9ral%20de%20Gaulle%2006340%20La%20Trinit%C3%A9" target="_blank" rel="noopener">Google Maps</a>
+                        <a href="tel:+33763652285" id="restaurantCallLink">Appeler</a>
                     </div>
                 </div>
             </div>

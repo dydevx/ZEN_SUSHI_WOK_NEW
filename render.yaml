@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: zen-sushi-wok
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: MAP_PROVIDER
+        value: osm
+      - key: SERVER_CONTACT_EMAIL
+        sync: false
