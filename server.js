@@ -50,6 +50,14 @@ function sendJson(res, status, payload) {
     res.end(body);
 }
 
+function sendHealthCheck(res) {
+    res.writeHead(200, {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-store"
+    });
+    res.end("ok");
+}
+
 function readBody(req) {
     return new Promise((resolve, reject) => {
         let body = "";
@@ -470,23 +478,39 @@ function serveStatic(req, res, pathname) {
         return;
     }
 
-    fs.readFile(filePath, (error, data) => {
-        if (error) {
+    fs.stat(filePath, (error, stat) => {
+        if (error || !stat.isFile()) {
             res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
             res.end("Not found");
             return;
         }
         const ext = path.extname(filePath).toLowerCase();
+        const isHtml = ext === ".html";
+        const isCacheableAsset = [".css", ".js", ".jpg", ".jpeg", ".png", ".webp", ".svg", ".ico"].includes(ext);
         res.writeHead(200, {
-            "Content-Type": MIME_TYPES[ext] || "application/octet-stream"
+            "Content-Type": MIME_TYPES[ext] || "application/octet-stream",
+            "Content-Length": stat.size,
+            "Cache-Control": isHtml
+                ? "no-cache"
+                : isCacheableAsset
+                    ? "public, max-age=86400"
+                    : "public, max-age=3600"
         });
-        res.end(data);
+        if (req.method === "HEAD") {
+            res.end();
+            return;
+        }
+        fs.createReadStream(filePath).pipe(res);
     });
 }
 
 const server = http.createServer(async (req, res) => {
     try {
         const url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
+        if ((req.method === "GET" || req.method === "HEAD") && url.pathname === "/healthz") {
+            sendHealthCheck(res);
+            return;
+        }
         if (req.method === "POST" && url.pathname === "/api/places/autocomplete") {
             await handleAutocomplete(req, res);
             return;

@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZEN SUSHI WOK</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preload" as="image" href="chef.jpg" fetchpriority="high">
+    <link rel="preload" as="image" href="background.png" fetchpriority="high">
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="menu-page.css">
@@ -58,7 +63,7 @@
                 linear-gradient(90deg, rgba(0, 0, 0, 0.24) 0%, rgba(0, 0, 0, 0.1) 47%, rgba(0, 0, 0, 0.3) 100%),
                 linear-gradient(90deg, rgba(8, 0, 0, 0.52) 0%, rgba(8, 0, 0, 0.42) 42%, rgba(6, 6, 6, 0.12) 68%, rgba(6, 6, 6, 0.08) 100%),
                 url("chef.jpg"),
-                url("background.jpg");
+                url("background.png");
             background-position: center, center, right 42%, center;
             background-repeat: no-repeat;
             background-size: 100% 100%, 100% 100%, 58% auto, 100% 100%;
@@ -243,7 +248,7 @@
         .single-section.alt {
             background:
                 linear-gradient(rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.72)),
-                url("background.jpg") center / cover fixed;
+                url("background.png") center / cover fixed;
         }
 
         .section-heading {
@@ -459,7 +464,7 @@
             border-top: 0;
             background:
                 linear-gradient(rgba(8, 0, 0, 0.84), rgba(8, 0, 0, 0.9)),
-                url("background.jpg") center / cover;
+                url("background.png") center / cover;
             color: #ffffff;
             text-align: left;
         }
@@ -634,7 +639,7 @@
                     linear-gradient(180deg, rgba(7, 0, 0, 0.28), rgba(7, 0, 0, 0.68)),
                     linear-gradient(90deg, rgba(8, 0, 0, 0.52) 0%, rgba(8, 0, 0, 0.42) 54%, rgba(6, 6, 6, 0.12) 76%, rgba(6, 6, 6, 0.08) 100%),
                     url("chef.jpg"),
-                    url("background.jpg");
+                    url("background.png");
                 background-position: center, center, center 42%, center;
                 background-size: 100% 100%, 100% 100%, 126% auto, 100% 100%;
             }
@@ -787,7 +792,7 @@
 
     <section class="menu-intro-section" id="menuIntroSection" hidden>
         <div class="menu-intro-photo" aria-hidden="true">
-            <img src="chef.jpg" alt="" loading="eager" decoding="async">
+            <img src="chef.jpg" alt="" loading="lazy" decoding="async">
         </div>
         <div class="menu-intro-content">
             <h2>ZEN SUSHI WOK</h2>
@@ -838,7 +843,7 @@
         </div>
         <div class="combo-grid">
             <article class="combo-card">
-                <img src="menu/1.PLATEAU/sushi9.png" alt="Zen Love">
+                <img loading="lazy" decoding="async" src="menu-optimized/1.PLATEAU/sushi9.jpg" alt="Zen Love">
                 <div class="combo-body">
                     <span class="tag">Nouveau</span>
                     <h3>Zen Love</h3>
@@ -846,7 +851,7 @@
                 </div>
             </article>
             <article class="combo-card">
-                <img src="menu/1.PLATEAU/sushi10.png" alt="Zen Dégustation">
+                <img loading="lazy" decoding="async" src="menu-optimized/1.PLATEAU/sushi10.jpg" alt="Zen Dégustation">
                 <div class="combo-body">
                     <span class="tag">Nouveau</span>
                     <h3>Zen Dégustation</h3>
@@ -854,7 +859,7 @@
                 </div>
             </article>
             <article class="combo-card">
-                <img src="menu/1.PLATEAU/sushi11.png" alt="Zen Family">
+                <img loading="lazy" decoding="async" src="menu-optimized/1.PLATEAU/sushi11.jpg" alt="Zen Family">
                 <div class="combo-body">
                     <span class="tag">Nouveau</span>
                     <h3>Zen Family</h3>
@@ -862,7 +867,7 @@
                 </div>
             </article>
             <article class="combo-card">
-                <img src="menu/1.PLATEAU/sushi12.png" alt="Zen Kids Salmon">
+                <img loading="lazy" decoding="async" src="menu-optimized/1.PLATEAU/sushi12.jpg" alt="Zen Kids Salmon">
                 <div class="combo-body">
                     <span class="tag">Nouveau</span>
                     <h3>Zen Kids Salmon</h3>
@@ -870,7 +875,7 @@
                 </div>
             </article>
             <article class="combo-card">
-                <img src="menu/1.PLATEAU/sushi13.png" alt="Zen Kids Yakitori">
+                <img loading="lazy" decoding="async" src="menu-optimized/1.PLATEAU/sushi13.jpg" alt="Zen Kids Yakitori">
                 <div class="combo-body">
                     <span class="tag">Nouveau</span>
                     <h3>Zen Kids Yakitori</h3>
@@ -893,22 +898,22 @@
                 <i class="fa-solid fa-chevron-right"></i>
             </button>
             <div class="signature-slider" id="signatureSlider">
-                <article class="signature-card"><img src="menu/2. SIGNATURES/sig1.png" alt="Crispy Roll Saumon"><span>Crispy Roll Saumon Avocat Cheese</span></article>
-                <article class="signature-card"><img src="menu/2. SIGNATURES/sig2.png" alt="Crispy Roll Thon"><span>Crispy Roll Thon Avocat Cheese</span></article>
-                <article class="signature-card"><img src="menu/2. SIGNATURES/sig3.png" alt="Crispy Roll Poulet"><span>Crispy Roll Poulet Pané Avocat Cheese</span></article>
-                <article class="signature-card"><img src="menu/2. SIGNATURES/sig4.png" alt="Crispy Roll Crevettes"><span>Crispy Roll Crevettes Tempura Avocat Cheese</span></article>
-                <article class="signature-card"><img src="menu/2. SIGNATURES/sig5.png" alt="Hot Saumon Roll"><span>Hot Saumon Roll Avocat Concombre Cheese</span></article>
-                <article class="signature-card"><img src="menu/2. SIGNATURES/sig6.png" alt="Hot Thon Roll"><span>Hot Thon Roll Avocat Concombre Cheese</span></article>
-                <article class="signature-card"><img src="menu/2. SIGNATURES/sig7.png" alt="Tartare Roll Saumon"><span>Tartare Roll Saumon Avocat Concombre Cheese</span></article>
-                <article class="signature-card"><img src="menu/2. SIGNATURES/sig8.png" alt="Zen Roll Saumon"><span>Zen Roll Saumon Avocat Concombre Cheese</span></article>
-                <article class="signature-card"><img src="menu/2. SIGNATURES/sig9.png" alt="Dragon Roll"><span>Dragon Roll Crevettes Tempura Avocat Cheese</span></article>
-                <article class="signature-card"><img src="menu/2. SIGNATURES/sig10.png" alt="Crispy Onion Thon"><span>Crispy Onion Thon Cuit Avocat Concombre Spicy Sauce</span></article>
-                <article class="signature-card"><img src="menu/2. SIGNATURES/sig11.png" alt="Crispy Onion Foie Gras"><span>Crispy Onion Foie Gras Mangue Chutney Figue</span></article>
-                <article class="signature-card"><img src="menu/2. SIGNATURES/sig12.png" alt="Chicken Roll"><span>Chicken Roll Poulet Pané Avocat Cheddar Flambé Oignon Frit</span></article>
-                <article class="signature-card"><img src="menu/2. SIGNATURES/sig13.png" alt="Dip Salmon Roll"><span>Dip Salmon Roll Avocat Cheese</span></article>
-                <article class="signature-card"><img src="menu/2. SIGNATURES/sig14.png" alt="Dip Tuna Roll"><span>Dip Tuna Roll Avocat Cheese</span></article>
-                <article class="signature-card"><img src="menu/2. SIGNATURES/sig15.png" alt="Dip Shrimp Roll"><span>Dip Shrimp Roll Avocat Cheese</span></article>
-                <article class="signature-card"><img src="menu/2. SIGNATURES/sig16.png" alt="Dip Chicken Roll"><span>Dip Chicken Roll Avocat Cheese</span></article>
+                <article class="signature-card"><img loading="lazy" decoding="async" src="menu-optimized/2. SIGNATURES/sig1.jpg" alt="Crispy Roll Saumon"><span>Crispy Roll Saumon Avocat Cheese</span></article>
+                <article class="signature-card"><img loading="lazy" decoding="async" src="menu-optimized/2. SIGNATURES/sig2.jpg" alt="Crispy Roll Thon"><span>Crispy Roll Thon Avocat Cheese</span></article>
+                <article class="signature-card"><img loading="lazy" decoding="async" src="menu-optimized/2. SIGNATURES/sig3.jpg" alt="Crispy Roll Poulet"><span>Crispy Roll Poulet Pané Avocat Cheese</span></article>
+                <article class="signature-card"><img loading="lazy" decoding="async" src="menu-optimized/2. SIGNATURES/sig4.jpg" alt="Crispy Roll Crevettes"><span>Crispy Roll Crevettes Tempura Avocat Cheese</span></article>
+                <article class="signature-card"><img loading="lazy" decoding="async" src="menu-optimized/2. SIGNATURES/sig5.jpg" alt="Hot Saumon Roll"><span>Hot Saumon Roll Avocat Concombre Cheese</span></article>
+                <article class="signature-card"><img loading="lazy" decoding="async" src="menu-optimized/2. SIGNATURES/sig6.jpg" alt="Hot Thon Roll"><span>Hot Thon Roll Avocat Concombre Cheese</span></article>
+                <article class="signature-card"><img loading="lazy" decoding="async" src="menu-optimized/2. SIGNATURES/sig7.jpg" alt="Tartare Roll Saumon"><span>Tartare Roll Saumon Avocat Concombre Cheese</span></article>
+                <article class="signature-card"><img loading="lazy" decoding="async" src="menu-optimized/2. SIGNATURES/sig8.jpg" alt="Zen Roll Saumon"><span>Zen Roll Saumon Avocat Concombre Cheese</span></article>
+                <article class="signature-card"><img loading="lazy" decoding="async" src="menu-optimized/2. SIGNATURES/sig9.jpg" alt="Dragon Roll"><span>Dragon Roll Crevettes Tempura Avocat Cheese</span></article>
+                <article class="signature-card"><img loading="lazy" decoding="async" src="menu-optimized/2. SIGNATURES/sig10.jpg" alt="Crispy Onion Thon"><span>Crispy Onion Thon Cuit Avocat Concombre Spicy Sauce</span></article>
+                <article class="signature-card"><img loading="lazy" decoding="async" src="menu-optimized/2. SIGNATURES/sig11.jpg" alt="Crispy Onion Foie Gras"><span>Crispy Onion Foie Gras Mangue Chutney Figue</span></article>
+                <article class="signature-card"><img loading="lazy" decoding="async" src="menu-optimized/2. SIGNATURES/sig12.jpg" alt="Chicken Roll"><span>Chicken Roll Poulet Pané Avocat Cheddar Flambé Oignon Frit</span></article>
+                <article class="signature-card"><img loading="lazy" decoding="async" src="menu-optimized/2. SIGNATURES/sig13.jpg" alt="Dip Salmon Roll"><span>Dip Salmon Roll Avocat Cheese</span></article>
+                <article class="signature-card"><img loading="lazy" decoding="async" src="menu-optimized/2. SIGNATURES/sig14.jpg" alt="Dip Tuna Roll"><span>Dip Tuna Roll Avocat Cheese</span></article>
+                <article class="signature-card"><img loading="lazy" decoding="async" src="menu-optimized/2. SIGNATURES/sig15.jpg" alt="Dip Shrimp Roll"><span>Dip Shrimp Roll Avocat Cheese</span></article>
+                <article class="signature-card"><img loading="lazy" decoding="async" src="menu-optimized/2. SIGNATURES/sig16.jpg" alt="Dip Chicken Roll"><span>Dip Chicken Roll Avocat Cheese</span></article>
             </div>
         </div>
     </section>
@@ -929,18 +934,18 @@
         </div>
         <div class="marquee-wrapper">
             <div class="marquee-track" id="marqueeTrack">
-                <img class="marquee-img" src="menu/10. TEMAKI/temaki1.png" alt="Temaki 1">
-                <img class="marquee-img" src="menu/10. TEMAKI/temaki2.png" alt="Temaki 2">
-                <img class="marquee-img" src="menu/10. TEMAKI/temaki3.png" alt="Temaki 3">
-                <img class="marquee-img" src="menu/10. TEMAKI/temaki4.png" alt="Temaki 4">
-                <img class="marquee-img" src="menu/10. TEMAKI/temaki5.png" alt="Temaki 5">
-                <img class="marquee-img" src="menu/1.PLATEAU/sushi7.png" alt="Plateau sushi">
-                <img class="marquee-img" src="menu/1.PLATEAU/sushi2.png" alt="Plateau sushi saumon">
-                <img class="marquee-img" src="menu/11. SASHIMI/sashimi1.png" alt="Sashimi 1">
-                <img class="marquee-img" src="menu/11. SASHIMI/sashimi2.png" alt="Sashimi 2">
-                <img class="marquee-img" src="menu/11. SASHIMI/sashimi3.png" alt="Sashimi 3">
-                <img class="marquee-img" src="menu/11. SASHIMI/sashimi4.png" alt="Sashimi 4">
-                <img class="marquee-img" src="menu/11. SASHIMI/sashimi5.png" alt="Sashimi 5">
+                <img loading="lazy" decoding="async" class="marquee-img" src="menu-optimized/10. TEMAKI/temaki1.jpg" alt="Temaki 1">
+                <img loading="lazy" decoding="async" class="marquee-img" src="menu-optimized/10. TEMAKI/temaki2.jpg" alt="Temaki 2">
+                <img loading="lazy" decoding="async" class="marquee-img" src="menu-optimized/10. TEMAKI/temaki3.jpg" alt="Temaki 3">
+                <img loading="lazy" decoding="async" class="marquee-img" src="menu-optimized/10. TEMAKI/temaki4.jpg" alt="Temaki 4">
+                <img loading="lazy" decoding="async" class="marquee-img" src="menu-optimized/10. TEMAKI/temaki5.jpg" alt="Temaki 5">
+                <img loading="lazy" decoding="async" class="marquee-img" src="menu-optimized/1.PLATEAU/sushi7.jpg" alt="Plateau sushi">
+                <img loading="lazy" decoding="async" class="marquee-img" src="menu-optimized/1.PLATEAU/sushi2.jpg" alt="Plateau sushi saumon">
+                <img loading="lazy" decoding="async" class="marquee-img" src="menu-optimized/11. SASHIMI/sashimi1.jpg" alt="Sashimi 1">
+                <img loading="lazy" decoding="async" class="marquee-img" src="menu-optimized/11. SASHIMI/sashimi2.jpg" alt="Sashimi 2">
+                <img loading="lazy" decoding="async" class="marquee-img" src="menu-optimized/11. SASHIMI/sashimi3.jpg" alt="Sashimi 3">
+                <img loading="lazy" decoding="async" class="marquee-img" src="menu-optimized/11. SASHIMI/sashimi4.jpg" alt="Sashimi 4">
+                <img loading="lazy" decoding="async" class="marquee-img" src="menu-optimized/11. SASHIMI/sashimi5.jpg" alt="Sashimi 5">
             </div>
         </div>
     </section>
@@ -1045,7 +1050,7 @@
         <div class="footer-inner">
             <div class="footer-info">
                 <div class="footer-brand">
-                    <img src="avatar.jpeg" alt="Zen Sushi Wok">
+                    <img src="avatar.jpeg" alt="Zen Sushi Wok" loading="lazy" decoding="async">
                     <h2>Bienvenue chez Zen Sushi Wok</h2>
                 </div>
                 <div class="footer-copy">
