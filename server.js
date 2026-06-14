@@ -22,7 +22,7 @@ const DELIVERY_ZONES = [
     { max: 1, fee: 0, minimum: 15 },
     { max: 2.99, fee: 2, minimum: 25 },
     { max: 4.99, fee: 3, minimum: 35 },
-    { max: Infinity, fee: 5, minimum: 45 }
+    { max: 10, fee: 5, minimum: 45 }
 ];
 
 const cache = new Map();

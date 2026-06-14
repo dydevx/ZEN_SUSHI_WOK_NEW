@@ -71,7 +71,7 @@ const DELIVERY_ZONES = [
     { max: 1, fee: 0, minimum: 15, eta: "25-35 min" },
     { max: 2.99, fee: 2, minimum: 25, eta: "30-40 min" },
     { max: 4.99, fee: 3, minimum: 35, eta: "35-50 min" },
-    { max: Infinity, fee: 5, minimum: 45, eta: "45-60 min" }
+    { max: 10, fee: 5, minimum: 45, eta: "45-60 min" }
 ];
 const ACCESSORY_PRICE = 0.5;
 const ACCESSORY_DEFAULTS_KEY = "zenAccessoryDefaults";
