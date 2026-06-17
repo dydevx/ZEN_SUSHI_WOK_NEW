@@ -379,12 +379,24 @@ body.modal-open {
     margin: 8px 0 10px;
 }
 
+.delivery-manual-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0 0 10px;
+}
+
+.delivery-manual-fields label {
+    align-self: end;
+}
+
 .delivery-input-wrap {
     position: relative;
     min-width: 0;
 }
 
-.delivery-search input {
+.delivery-search input,
+.delivery-manual-fields input {
     width: 100%;
     min-width: 0;
     min-height: 46px;
@@ -1768,7 +1780,8 @@ body.header-compact .logo {
     }
 
     .service-mode-buttons,
-    .delivery-search {
+    .delivery-search,
+    .delivery-manual-fields {
         grid-template-columns: 1fr;
     }
 

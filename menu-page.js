@@ -47,8 +47,9 @@ const productRails = document.getElementById("productRails");
 const deliveryAddress = document.getElementById("deliveryAddress");
 const deliveryMessage = document.getElementById("deliveryMessage");
 const deliveryResult = document.getElementById("deliveryResult");
-const addressSuggestions = document.getElementById("addressSuggestions");
 const checkDeliveryButton = document.getElementById("checkDeliveryButton");
+const deliveryDistanceNote = document.getElementById("deliveryDistanceNote");
+const deliveryFeeNote = document.getElementById("deliveryFeeNote");
 const serviceButtons = document.querySelectorAll("[data-service-mode]");
 const deliveryPanel = document.getElementById("deliveryPanel");
 const pickupPanel = document.getElementById("pickupPanel");
@@ -66,13 +67,7 @@ const WHATSAPP_ORDER_PHONE = "33763652285";
 const CUSTOMER_INFO_KEY = "zenCustomerInfo";
 const CHECKOUT_READY_MESSAGE = "Commande prete a envoyer sur WhatsApp.";
 const RESTAURANT_MAP_ORIGIN = "Zen Sushi Wok, 108 Bd du General de Gaulle, 06340 La Trinite, France";
-const DELIVERY_FEE_PENDING_LABEL = "A calculer";
-const DELIVERY_ZONES = [
-    { max: 1, fee: 0, minimum: 15, eta: "25-35 min" },
-    { max: 2.99, fee: 2, minimum: 25, eta: "30-40 min" },
-    { max: 4.99, fee: 3, minimum: 35, eta: "35-50 min" },
-    { max: 10, fee: 5, minimum: 45, eta: "45-60 min" }
-];
+const DELIVERY_FEE_PENDING_LABEL = "A noter";
 const ACCESSORY_PRICE = 0.5;
 const ACCESSORY_DEFAULTS_KEY = "zenAccessoryDefaults";
 const ACCESSORIES = [
@@ -129,8 +124,6 @@ let selectedGroupItems = new Map();
 let modalCustomization = null;
 let modalEditingEntryId = "";
 let currentOrderReference = "";
-let selectedDeliveryPlaceId = deliveryInfo && deliveryInfo.placeId ? deliveryInfo.placeId : "";
-let addressSuggestTimer = null;
 
 cart = cart.filter((entry) => entry && entry.id && entry.item && entry.qty > 0).map(normalizeCartEntry);
 initCustomerFields();
@@ -184,6 +177,7 @@ function initCustomerFields() {
     if (customerAddressInput) customerAddressInput.value = savedAddress;
     if (customerEmailInput) customerEmailInput.value = stored.email || "";
     if (deliveryAddress && savedAddress) deliveryAddress.value = savedAddress;
+    syncDeliveryNoteInputs();
 
     [customerNameInput, customerPhoneInput, customerAddressInput, customerEmailInput]
         .filter(Boolean)
@@ -207,15 +201,25 @@ function initCustomerFields() {
             if (customerAddressInput) customerAddressInput.value = deliveryAddress.value;
             if (deliveryInfo && deliveryInfo.address !== deliveryAddress.value.trim()) {
                 deliveryInfo = null;
-                selectedDeliveryPlaceId = "";
                 writeJson("zenDeliveryInfo", deliveryInfo);
                 if (deliveryResult) deliveryResult.hidden = true;
             }
-            queueAddressSuggestions(deliveryAddress.value);
             saveCustomerInfo();
             updateCart();
         });
     }
+
+    [deliveryDistanceNote, deliveryFeeNote]
+        .filter(Boolean)
+        .forEach((input) => {
+            input.addEventListener("input", () => {
+                if ((deliveryAddress && deliveryAddress.value.trim()) || (customerAddressInput && customerAddressInput.value.trim())) {
+                    saveManualDeliveryInfo();
+                    renderDeliveryResult();
+                }
+                updateCart();
+            });
+        });
 }
 
 function escapeHtml(value) {
@@ -238,34 +242,33 @@ function buildGoogleMapsDirectionsUrl(destination) {
     return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
 
-function createDeliveryInfo(address) {
+function normalizeDeliveryNote(value) {
+    return String(value || "").trim();
+}
+
+function createDeliveryInfo(address, notes = {}) {
     const normalizedAddress = String(address || "").trim();
     if (!normalizedAddress) return null;
     return {
         address: normalizedAddress,
         mapUrl: buildGoogleMapsDirectionsUrl(normalizedAddress),
         available: true,
-        needsConfirmation: true,
+        needsConfirmation: false,
         fee: null,
         minimum: null,
         eta: null,
         distance: null,
-        placeId: ""
+        distanceNote: normalizeDeliveryNote(notes.distanceNote),
+        feeNote: normalizeDeliveryNote(notes.feeNote)
     };
 }
 
 function normalizeDeliveryInfo(info) {
     if (!info || !info.address) return null;
-    if (info.needsConfirmation === false && info.fee != null && Number.isFinite(Number(info.fee))) {
-        return {
-            ...info,
-            distance: info.distance != null ? Number(info.distance) : null,
-            minimum: info.minimum != null ? Number(info.minimum) : null,
-            fee: Number(info.fee),
-            mapUrl: info.mapUrl || buildGoogleMapsDirectionsUrl(info.address)
-        };
-    }
-    return createDeliveryInfo(info.address);
+    return createDeliveryInfo(info.address, {
+        distanceNote: info.distanceNote,
+        feeNote: info.feeNote
+    });
 }
 
 function getDeliveryMapUrl(address) {
@@ -277,81 +280,39 @@ function getDeliveryMapUrl(address) {
     return buildGoogleMapsDirectionsUrl(normalizedAddress);
 }
 
-function hideAddressSuggestions() {
-    if (!addressSuggestions) return;
-    addressSuggestions.hidden = true;
-    addressSuggestions.innerHTML = "";
+function getDeliveryFeeNote() {
+    return normalizeDeliveryNote((deliveryFeeNote && deliveryFeeNote.value) || (deliveryInfo && deliveryInfo.feeNote));
 }
 
-function renderAddressSuggestions(suggestions) {
-    if (!addressSuggestions) return;
-    if (!suggestions.length) {
-        hideAddressSuggestions();
-        return;
-    }
-    addressSuggestions.innerHTML = suggestions.map((suggestion) => `
-        <button type="button" data-place-id="${escapeHtml(suggestion.placeId)}" data-place-text="${escapeHtml(suggestion.text)}">
-            ${escapeHtml(suggestion.text)}
-        </button>
-    `).join("");
-    addressSuggestions.hidden = false;
+function getDeliveryDistanceNote() {
+    return normalizeDeliveryNote((deliveryDistanceNote && deliveryDistanceNote.value) || (deliveryInfo && deliveryInfo.distanceNote));
 }
 
-function queueAddressSuggestions(value) {
-    clearTimeout(addressSuggestTimer);
-    const input = String(value || "").trim();
-    if (input.length < 3) {
-        hideAddressSuggestions();
-        return;
-    }
-    addressSuggestTimer = setTimeout(() => fetchAddressSuggestions(input), 260);
+function getDeliveryDistanceLabel() {
+    const note = getDeliveryDistanceNote();
+    if (!note) return "A noter apres verification Google Maps";
+    return /\d/.test(note) && !/km/i.test(note) ? `${note} km` : note;
 }
 
-async function fetchAddressSuggestions(input) {
-    try {
-        const response = await fetch("/api/places/autocomplete", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ input })
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Autocomplete indisponible.");
-        renderAddressSuggestions(data.suggestions || []);
-    } catch (error) {
-        hideAddressSuggestions();
-    }
+function getDeliveryFeeLabel() {
+    const note = getDeliveryFeeNote();
+    if (!note) return DELIVERY_FEE_PENDING_LABEL;
+    return /\d/.test(note) && !/€|eur/i.test(note) ? `${note}€` : note;
 }
 
-function deliveryInfoFromEstimate(data) {
-    if (!data || !data.available) {
-        return {
-            address: data && data.address ? data.address : (deliveryAddress ? deliveryAddress.value.trim() : ""),
-            mapUrl: data && data.address ? buildGoogleMapsDirectionsUrl(data.address) : "",
-            available: false,
-            needsConfirmation: false,
-            fee: null,
-            minimum: null,
-            eta: null,
-            distance: data && data.distance != null ? Number(data.distance) : null,
-            placeId: selectedDeliveryPlaceId,
-            provider: data && data.provider ? data.provider : "osm"
-        };
-    }
+function syncDeliveryNoteInputs() {
+    if (deliveryDistanceNote) deliveryDistanceNote.value = deliveryInfo && deliveryInfo.distanceNote ? deliveryInfo.distanceNote : "";
+    if (deliveryFeeNote) deliveryFeeNote.value = deliveryInfo && deliveryInfo.feeNote ? deliveryInfo.feeNote : "";
+}
 
-    return {
-        address: data.address,
-        mapUrl: data.mapUrl || buildGoogleMapsDirectionsUrl(data.address),
-        available: true,
-        needsConfirmation: false,
-        fee: Number(data.fee),
-        minimum: Number(data.minimum),
-        eta: data.eta || (data.etaMinutes ? `${data.etaMinutes} min` : "A confirmer"),
-        etaMinutes: data.etaMinutes || null,
-        distance: Number(data.distance),
-        distanceMeters: data.distanceMeters || null,
-        placeId: data.placeId || selectedDeliveryPlaceId,
-        provider: data.provider || "osm"
-    };
+function saveManualDeliveryInfo() {
+    const address = (deliveryAddress && deliveryAddress.value ? deliveryAddress.value : (customerAddressInput ? customerAddressInput.value : "")).trim();
+    deliveryInfo = createDeliveryInfo(address, {
+        distanceNote: deliveryDistanceNote ? deliveryDistanceNote.value : "",
+        feeNote: deliveryFeeNote ? deliveryFeeNote.value : ""
+    });
+    writeJson("zenDeliveryInfo", deliveryInfo);
+    return deliveryInfo;
 }
 
 function renderDeliveryResult() {
@@ -371,15 +332,12 @@ function renderDeliveryResult() {
         return;
     }
 
-    const distanceLabel = deliveryInfo.distance != null ? `${Number(deliveryInfo.distance).toFixed(2).replace(".", ",")} km` : "A confirmer";
-    const providerLabel = deliveryInfo.provider === "google" ? "Google Maps" : "OpenStreetMap/OSRM";
     deliveryResult.innerHTML = `
         <span class="full">Adresse livraison: ${escapeHtml(deliveryInfo.address)}</span>
-        <span>Distance ${providerLabel}: ${distanceLabel}</span>
-        <span>Frais de livraison: ${formatMoney(deliveryInfo.fee)}</span>
-        <span>Minimum commande: ${formatMoney(deliveryInfo.minimum)}</span>
-        <span>Temps estimé livraison: ${escapeHtml(deliveryInfo.eta || "A confirmer")}</span>
-        <a class="delivery-map-link full" href="${escapeHtml(deliveryInfo.mapUrl)}" target="_blank" rel="noopener">Voir l'itinéraire</a>
+        <span>Distance Google Maps: ${escapeHtml(getDeliveryDistanceLabel())}</span>
+        <span>Frais de livraison: ${escapeHtml(getDeliveryFeeLabel())}</span>
+        <span class="full">A verifier sur Google Maps avant confirmation.</span>
+        <a class="delivery-map-link full" href="${escapeHtml(deliveryInfo.mapUrl)}" target="_blank" rel="noopener">Verifier sur Google Maps</a>
     `;
 }
 
@@ -957,11 +915,15 @@ function getDeliveryFee() {
 
 function getDeliveryLabel() {
     if (serviceMode !== "delivery") return formatMoney(0);
-    return hasConfirmedDeliveryFee() ? formatMoney(getDeliveryFee()) : DELIVERY_FEE_PENDING_LABEL;
+    return hasConfirmedDeliveryFee() ? formatMoney(getDeliveryFee()) : getDeliveryFeeLabel();
 }
 
 function getGrandTotal() {
     return getFoodTotal() + getAccessoryOverage() * ACCESSORY_PRICE + getDeliveryFee();
+}
+
+function getDeliveryTotalSuffix() {
+    return serviceMode === "delivery" ? " + livraison" : "";
 }
 
 function updateCart() {
@@ -972,14 +934,14 @@ function updateCart() {
     const grandTotal = getGrandTotal();
 
     cartCountEl.textContent = String(itemCount);
-    cartTotalHeader.textContent = formatMoney(grandTotal);
+    cartTotalHeader.textContent = `${formatMoney(grandTotal)}${getDeliveryTotalSuffix()}`;
     checkoutButton.hidden = itemCount === 0;
     cartButton.classList.toggle("has-items", itemCount > 0);
-    cartPanelTotal.textContent = formatMoney(grandTotal);
+    cartPanelTotal.textContent = `${formatMoney(grandTotal)}${getDeliveryTotalSuffix()}`;
     cartFoodTotal.textContent = formatMoney(foodTotal);
     cartAccessoryTotal.textContent = formatMoney(accessoryTotal);
     cartDeliveryFee.textContent = getDeliveryLabel();
-    cartGrandTotal.textContent = formatMoney(grandTotal);
+    cartGrandTotal.textContent = `${formatMoney(grandTotal)}${getDeliveryTotalSuffix()}`;
 
     renderCartItems();
     renderAccessories();
@@ -1056,27 +1018,17 @@ function renderCartServiceSummary() {
         return;
     }
 
-    if (!deliveryInfo) {
-        cartServiceSummary.innerHTML = `<strong>Livraison</strong><span>Veuillez vérifier l'adresse pour calculer les frais de livraison.</span>`;
+    const info = getCustomerInfo();
+    if (!info.address) {
+        cartServiceSummary.innerHTML = `<strong>Livraison</strong><span>Veuillez indiquer l'adresse de livraison.</span>`;
         return;
     }
 
-    if (!deliveryInfo.available) {
-        cartServiceSummary.innerHTML = `<strong>Livraison</strong><span>Zone non desservie actuellement.</span>`;
-        return;
-    }
-
-    if (deliveryInfo.needsConfirmation) {
-        const mapLink = deliveryInfo.mapUrl
-            ? `<a class="delivery-map-link" href="${escapeHtml(deliveryInfo.mapUrl)}" target="_blank" rel="noopener">Verifier sur Google Maps</a>`
-            : "";
-        cartServiceSummary.innerHTML = `<strong>Livraison</strong><span>Veuillez vérifier l'adresse pour calculer les frais de livraison.</span>${mapLink}`;
-        return;
-    }
-
-    const distanceLabel = deliveryInfo.distance != null ? `${Number(deliveryInfo.distance).toFixed(1)} km` : "Distance a confirmer";
-    const minimumLabel = deliveryInfo.minimum != null ? formatMoney(deliveryInfo.minimum) : "-";
-    cartServiceSummary.innerHTML = `<strong>Livraison</strong><span>${distanceLabel} - frais ${formatMoney(deliveryInfo.fee)} - minimum ${minimumLabel} - ${deliveryInfo.eta || "-"}</span>`;
+    const mapUrl = getDeliveryMapUrl(info.address);
+    const mapLink = mapUrl
+        ? `<a class="delivery-map-link" href="${escapeHtml(mapUrl)}" target="_blank" rel="noopener">Verifier sur Google Maps</a>`
+        : "";
+    cartServiceSummary.innerHTML = `<strong>Livraison</strong><span>${escapeHtml(getDeliveryDistanceLabel())} - frais ${escapeHtml(getDeliveryFeeLabel())}. A verifier sur Google Maps.</span>${mapLink}`;
 }
 
 function getCustomerValidationMessage() {
@@ -1085,8 +1037,6 @@ function getCustomerValidationMessage() {
     if (!info.name) return "Veuillez indiquer le nom du client.";
     if (!info.phone) return "Veuillez indiquer le telephone du client.";
     if (serviceMode === "delivery" && !info.address) return "Veuillez indiquer l'adresse de livraison.";
-    if (serviceMode === "delivery" && !deliveryInfo) return "Veuillez verifier l'adresse de livraison.";
-    if (serviceMode === "delivery" && deliveryInfo.needsConfirmation) return "Veuillez verifier l'adresse de livraison.";
     if (info.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(info.email)) return "Veuillez verifier l'email du client.";
     return "";
 }
@@ -1100,10 +1050,6 @@ function updateCheckoutMessage() {
         message = "Ajoutez un plat pour commencer.";
     } else if (customerMessage) {
         message = customerMessage;
-    } else if (serviceMode === "delivery" && deliveryInfo && !deliveryInfo.available) {
-        message = "Zone non desservie actuellement.";
-    } else if (serviceMode === "delivery" && deliveryInfo && deliveryInfo.minimum != null && foodTotal < deliveryInfo.minimum) {
-        message = `Montant minimum pour cette zone : ${formatMoney(deliveryInfo.minimum)}. Il manque ${formatMoney(deliveryInfo.minimum - foodTotal)}.`;
     } else {
         message = CHECKOUT_READY_MESSAGE;
     }
@@ -1176,9 +1122,8 @@ function buildWhatsAppOrderMessage() {
 
     if (serviceMode === "delivery") {
         lines.push("", "LIVRAISON", `Frais: ${deliveryLabel}`);
-        if (deliveryInfo && deliveryInfo.available && deliveryInfo.needsConfirmation !== true && deliveryInfo.distance != null) {
-            lines.push(`${Number(deliveryInfo.distance).toFixed(1)} km - ${deliveryInfo.eta || "-"} - minimum ${deliveryInfo.minimum != null ? formatMoney(deliveryInfo.minimum) : "-"}`);
-        }
+        lines.push(`Distance Google Maps: ${getDeliveryDistanceLabel()}`);
+        lines.push("Note: frais et distance a confirmer apres verification sur Google Maps.");
         if (deliveryMapUrl) lines.push(`Lien Google Maps: ${deliveryMapUrl}`);
     }
 
@@ -1188,7 +1133,7 @@ function buildWhatsAppOrderMessage() {
         `Plats: ${formatMoney(foodTotal)}`,
         `Accessoires: ${formatMoney(accessoryTotal)}`,
         `Livraison: ${deliveryLabel}`,
-        `Total: ${formatMoney(foodTotal + accessoryTotal + deliveryFee)}${deliveryLabel === DELIVERY_FEE_PENDING_LABEL ? " + livraison" : ""}`
+        `Total: ${formatMoney(foodTotal + accessoryTotal + deliveryFee)}${getDeliveryTotalSuffix()}`
     );
 
     return lines.join("\n");
@@ -1442,7 +1387,8 @@ function buildInvoiceDocument() {
                 <h2>Service</h2>
                 <p><strong>${serviceLabel}</strong></p>
                 <p>Livraison: ${deliveryLabel}</p>
-                ${serviceMode === "delivery" && deliveryInfo && deliveryInfo.available && deliveryInfo.needsConfirmation !== true && deliveryInfo.distance != null ? `<p>${Number(deliveryInfo.distance).toFixed(1)} km - ${escapeHtml(deliveryInfo.eta || "")}</p>` : ""}
+                ${serviceMode === "delivery" ? `<p>Distance Google Maps: ${escapeHtml(getDeliveryDistanceLabel())}</p>` : ""}
+                ${serviceMode === "delivery" ? `<p>Frais et distance a confirmer apres verification Google Maps.</p>` : ""}
                 ${deliveryMapUrl ? `<p><a href="${escapeHtml(deliveryMapUrl)}" target="_blank" rel="noopener">Verifier sur Google Maps</a></p>` : ""}
             </div>
         </section>
@@ -1465,7 +1411,7 @@ function buildInvoiceDocument() {
             <div class="total-row"><span>Plats</span><strong>${formatMoney(foodTotal)}</strong></div>
             <div class="total-row"><span>Accessoires</span><strong>${formatMoney(accessoryTotal)}</strong></div>
             <div class="total-row"><span>Livraison</span><strong>${deliveryLabel}</strong></div>
-            <div class="total-row grand"><span>Total</span><strong>${formatMoney(grandTotal)}${deliveryLabel === DELIVERY_FEE_PENDING_LABEL ? " + livraison" : ""}</strong></div>
+            <div class="total-row grand"><span>Total</span><strong>${formatMoney(grandTotal)}${getDeliveryTotalSuffix()}</strong></div>
         </section>
         <p class="note">Document généré depuis le site Zen Sushi Wok. Les prix, disponibilités et frais de livraison restent à confirmer par le restaurant.</p>
     </main>
@@ -2225,11 +2171,10 @@ function applyServiceMode(mode) {
     if (deliveryPanel) deliveryPanel.hidden = mode !== "delivery";
     if (pickupPanel) pickupPanel.hidden = mode !== "pickup";
     if (mode === "delivery") renderDeliveryResult();
-    else hideAddressSuggestions();
     updateCart();
 }
 
-async function estimateDelivery() {
+function estimateDelivery() {
     const value = (customerAddressInput && customerAddressInput.value ? customerAddressInput.value : (deliveryAddress ? deliveryAddress.value : "")).trim();
     if (deliveryAddress) deliveryAddress.value = value;
     if (customerAddressInput) customerAddressInput.value = value;
@@ -2237,46 +2182,16 @@ async function estimateDelivery() {
     if (!value) {
         deliveryInfo = null;
         if (deliveryResult) deliveryResult.hidden = true;
-        if (deliveryMessage) deliveryMessage.textContent = "Entrez une adresse et choisissez une suggestion pour calculer les frais.";
+        if (deliveryMessage) deliveryMessage.textContent = "Entrez l'adresse, puis notez la distance et les frais apres verification sur Google Maps.";
         writeJson("zenDeliveryInfo", deliveryInfo);
         updateCart();
         return;
     }
 
-    hideAddressSuggestions();
-    if (deliveryMessage) deliveryMessage.textContent = "Calcul de la distance par itinéraire...";
-    if (checkDeliveryButton) checkDeliveryButton.disabled = true;
-
-    try {
-        const response = await fetch("/api/delivery/estimate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ address: value, placeId: selectedDeliveryPlaceId })
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Calcul livraison indisponible.");
-
-        deliveryInfo = deliveryInfoFromEstimate(data);
-        if (customerAddressInput) customerAddressInput.value = deliveryInfo.address || value;
-        if (deliveryAddress) deliveryAddress.value = deliveryInfo.address || value;
-        selectedDeliveryPlaceId = deliveryInfo.placeId || selectedDeliveryPlaceId;
-        writeJson("zenDeliveryInfo", deliveryInfo);
-        saveCustomerInfo();
-        renderDeliveryResult();
-        if (deliveryMessage) {
-            deliveryMessage.textContent = deliveryInfo.available
-                ? "Adresse vérifiée. Les frais de livraison sont ajoutés au panier."
-                : (data.message || "Zone non desservie actuellement.");
-        }
-    } catch (error) {
-        deliveryInfo = null;
-        writeJson("zenDeliveryInfo", deliveryInfo);
-        if (deliveryResult) deliveryResult.hidden = true;
-        if (deliveryMessage) deliveryMessage.textContent = error.message || "Impossible de calculer la livraison.";
-    } finally {
-        if (checkDeliveryButton) checkDeliveryButton.disabled = false;
-        updateCart();
-    }
+    saveManualDeliveryInfo();
+    renderDeliveryResult();
+    if (deliveryMessage) deliveryMessage.textContent = "Adresse enregistree. Verifiez la distance sur Google Maps et notez les frais de livraison.";
+    updateCart();
 }
 
 function openCart() {
@@ -2319,24 +2234,6 @@ document.addEventListener("click", (event) => {
     const customDecButton = event.target.closest("[data-custom-dec]");
     const railNext = event.target.closest("[data-rail-next]");
     const railPrev = event.target.closest("[data-rail-prev]");
-    const suggestionButton = event.target.closest("[data-place-id]");
-
-    if (suggestionButton) {
-        selectedDeliveryPlaceId = suggestionButton.dataset.placeId || "";
-        const text = suggestionButton.dataset.placeText || suggestionButton.textContent.trim();
-        if (deliveryAddress) deliveryAddress.value = text;
-        if (customerAddressInput) customerAddressInput.value = text;
-        deliveryInfo = null;
-        writeJson("zenDeliveryInfo", deliveryInfo);
-        hideAddressSuggestions();
-        saveCustomerInfo();
-        updateCart();
-        return;
-    }
-
-    if (addressSuggestions && !event.target.closest(".delivery-input-wrap")) {
-        hideAddressSuggestions();
-    }
 
     if (customIncButton || customDecButton) {
         updateCustomizationQuantity((customIncButton || customDecButton).dataset.customInc || (customIncButton || customDecButton).dataset.customDec, customIncButton ? 1 : -1);

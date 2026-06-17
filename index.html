@@ -763,11 +763,16 @@
                     <div class="delivery-search">
                         <div class="delivery-input-wrap">
                             <input id="deliveryAddress" type="text" placeholder="Ex: 12 rue..., 06340 La Trinité" autocomplete="off">
-                            <div class="address-suggestions" id="addressSuggestions" hidden></div>
                         </div>
-                        <button type="button" id="checkDeliveryButton">Vérifier</button>
+                        <button type="button" id="checkDeliveryButton">Noter</button>
                     </div>
-                    <p class="delivery-message" id="deliveryMessage">Entrez une adresse et choisissez une suggestion pour calculer les frais.</p>
+                    <div class="delivery-manual-fields" aria-label="Notes livraison">
+                        <label for="deliveryDistanceNote">Distance Google Maps</label>
+                        <input id="deliveryDistanceNote" type="text" inputmode="decimal" placeholder="Ex: 4,2 km">
+                        <label for="deliveryFeeNote">Frais de livraison</label>
+                        <input id="deliveryFeeNote" type="text" inputmode="decimal" placeholder="Ex: 3€ ou à confirmer">
+                    </div>
+                    <p class="delivery-message" id="deliveryMessage">Entrez l'adresse, puis notez la distance et les frais après vérification sur Google Maps.</p>
                     <div class="delivery-result" id="deliveryResult" hidden></div>
                 </div>
                 <div class="service-mode-content" id="pickupPanel" hidden>
