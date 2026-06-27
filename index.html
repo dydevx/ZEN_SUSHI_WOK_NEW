@@ -164,6 +164,18 @@
             transform: translateY(-1px);
         }
 
+        .home-actions .order-button {
+            min-width: 180px;
+            background: var(--accent);
+            color: #ffffff;
+        }
+
+        .home-actions .pickup-whatsapp-button {
+            min-width: 180px;
+            background: #ffffff;
+            color: #111111;
+        }
+
         .menu-intro-section {
             position: relative;
             isolation: isolate;
@@ -732,8 +744,8 @@
                     <strong id="cartCount">0</strong>
                     <em id="cartTotalHeader">0,00€</em>
                 </button>
-                <button class="clear-cart-button" type="button" id="checkoutButton" aria-label="Commander" hidden>
-                    Commander
+                <button class="clear-cart-button" type="button" id="checkoutButton" aria-label="Finaliser" hidden>
+                    Finaliser
                 </button>
             </div>
         </div>
@@ -747,56 +759,9 @@
             <div class="eyebrow">L'art culinaire japonais</div>
             <h1>ZEN SUSHI WOK</h1>
             <p>Sushis frais, plats chauds, wok et créations signature préparés à la minute avec des produits frais.</p>
-            <div class="service-mode-panel" aria-label="Choix du service">
-                <div class="service-mode-buttons">
-                    <button class="service-mode-button active" type="button" data-service-mode="delivery">
-                        <i class="fa-solid fa-motorcycle"></i>
-                        Livraison
-                    </button>
-                    <button class="service-mode-button" type="button" data-service-mode="pickup">
-                        <i class="fa-solid fa-bag-shopping"></i>
-                        À emporter
-                    </button>
-                </div>
-                <div class="service-mode-content" id="deliveryPanel">
-                    <label for="deliveryAddress">Adresse ou postcode de livraison</label>
-                    <div class="delivery-search">
-                        <div class="delivery-input-wrap">
-                            <input id="deliveryAddress" type="text" placeholder="Ex: 12 rue..., 06340 La Trinité" autocomplete="off">
-                        </div>
-                        <button type="button" id="checkDeliveryButton">Noter</button>
-                    </div>
-                    <div class="delivery-manual-fields" aria-label="Notes livraison">
-                        <label for="deliveryDistanceNote">Distance Google Maps</label>
-                        <input id="deliveryDistanceNote" type="text" inputmode="decimal" placeholder="Ex: 4,2 km">
-                        <label for="deliveryFeeNote">Frais de livraison</label>
-                        <input id="deliveryFeeNote" type="text" inputmode="decimal" placeholder="Ex: 3€ ou à confirmer">
-                    </div>
-                    <div class="delivery-rate-note" aria-label="Tarifs livraison">
-                        <div><strong>0 - 1 km</strong><span>Livraison gratuite · minimum commande 15€</span></div>
-                        <div><strong>1 - 2,99 km</strong><span>Livraison 2€ · minimum commande 25€</span></div>
-                        <div><strong>3 - 4,99 km</strong><span>Livraison 3€ · minimum commande 35€</span></div>
-                        <div><strong>≥ 5 km</strong><span>Livraison 5€ · minimum commande 45€</span></div>
-                    </div>
-                    <p class="delivery-message" id="deliveryMessage">Entrez l'adresse, puis notez la distance et les frais après vérification sur Google Maps.</p>
-                    <div class="delivery-result" id="deliveryResult" hidden></div>
-                </div>
-                <div class="service-mode-content" id="pickupPanel" hidden>
-                    <div class="pickup-card">
-                        <p><i class="fa-solid fa-location-dot"></i><span id="restaurantAddress"><strong>ZEN SUSHI WOK</strong><br>108 Boulevard du Général de Gaulle, 06340 La Trinité</span></p>
-                        <p><i class="fa-solid fa-phone"></i><span id="restaurantPhone">07 63 65 22 85</span></p>
-                        <p><i class="fa-solid fa-clock"></i><span>11h30 - 14h30 et 18h00 - 22h00 (mardi au dimanche)</span></p>
-                    </div>
-                    <div class="pickup-actions">
-                        <a href="https://www.google.com/maps/dir/?api=1&destination=ZEN%20SUSHI%20WOK%20108%20Boulevard%20du%20G%C3%A9n%C3%A9ral%20de%20Gaulle%2006340%20La%20Trinit%C3%A9" target="_blank" rel="noopener">Voir l'itinéraire</a>
-                        <a href="https://www.google.com/maps/search/?api=1&query=ZEN%20SUSHI%20WOK%20108%20Boulevard%20du%20G%C3%A9n%C3%A9ral%20de%20Gaulle%2006340%20La%20Trinit%C3%A9" target="_blank" rel="noopener">Google Maps</a>
-                        <a href="tel:+33763652285" id="restaurantCallLink">Appeler</a>
-                    </div>
-                </div>
-            </div>
             <div class="home-actions">
-                <button type="button" onclick="showMenuIntro()">Voir le menu</button>
-                <a href="#combos">Découvrir les combos</a>
+                <a class="order-button" href="https://commandes.zensushiwok.com/order">Commander</a>
+                <button class="pickup-whatsapp-button" type="button" onclick="startPickupOrder()">À emporter</button>
             </div>
         </div>
     </section>
@@ -1047,7 +1012,7 @@
             <footer class="cart-panel-footer">
                 <div class="cart-total-row"><span>Plats</span><strong id="cartFoodTotal">0,00€</strong></div>
                 <div class="cart-total-row"><span>Accessoires</span><strong id="cartAccessoryTotal">0,00€</strong></div>
-                <div class="cart-total-row"><span>Livraison</span><strong id="cartDeliveryFee">0,00€</strong></div>
+                <div class="cart-total-row" id="cartDeliveryRow"><span>Livraison</span><strong id="cartDeliveryFee">0,00€</strong></div>
                 <div class="cart-total-row grand"><span>Total</span><strong id="cartGrandTotal">0,00€</strong></div>
                 <p class="checkout-message" id="checkoutMessage"></p>
                 <button class="invoice-secondary-button" type="button" id="invoiceButton">Créer la facture PDF</button>
@@ -1116,6 +1081,21 @@
         const track = document.getElementById("marqueeTrack");
         if (track) {
             track.innerHTML += track.innerHTML;
+        }
+
+        function startPickupOrder() {
+            if (typeof applyServiceMode === "function") {
+                applyServiceMode("pickup");
+            }
+
+            if (typeof focusMenuCategories === "function") {
+                focusMenuCategories();
+                return;
+            }
+
+            if (typeof showMenuIntro === "function") {
+                showMenuIntro();
+            }
         }
     </script>
 </body>

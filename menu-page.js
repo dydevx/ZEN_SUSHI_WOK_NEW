@@ -25,6 +25,7 @@ const accessoryQuotaText = document.getElementById("accessoryQuotaText");
 const cartPanelTotal = document.getElementById("cartPanelTotal");
 const cartFoodTotal = document.getElementById("cartFoodTotal");
 const cartAccessoryTotal = document.getElementById("cartAccessoryTotal");
+const cartDeliveryRow = document.getElementById("cartDeliveryRow");
 const cartDeliveryFee = document.getElementById("cartDeliveryFee");
 const cartGrandTotal = document.getElementById("cartGrandTotal");
 const cartServiceSummary = document.getElementById("cartServiceSummary");
@@ -68,6 +69,7 @@ const CUSTOMER_INFO_KEY = "zenCustomerInfo";
 const CHECKOUT_READY_MESSAGE = "Commande prete a envoyer sur WhatsApp.";
 const RESTAURANT_MAP_ORIGIN = "Zen Sushi Wok, 108 Bd du General de Gaulle, 06340 La Trinite, France";
 const DELIVERY_FEE_PENDING_LABEL = "A noter";
+const WHATSAPP_SERVICE_MODE = "pickup";
 const ACCESSORY_PRICE = 0.5;
 const ACCESSORY_DEFAULTS_KEY = "zenAccessoryDefaults";
 const ACCESSORIES = [
@@ -114,7 +116,7 @@ const ZEN_WOK_SUPPLEMENTS = [
 let activeDish = null;
 let activeCategory = "";
 let toastTimer = null;
-let serviceMode = localStorage.getItem("zenServiceMode") || "delivery";
+let serviceMode = WHATSAPP_SERVICE_MODE;
 let deliveryInfo = normalizeDeliveryInfo(readJson("zenDeliveryInfo", null));
 let cart = readJson("zenCartItems", []);
 let accessories = readJson("zenAccessories", {});
@@ -126,6 +128,7 @@ let modalEditingEntryId = "";
 let currentOrderReference = "";
 
 cart = cart.filter((entry) => entry && entry.id && entry.item && entry.qty > 0).map(normalizeCartEntry);
+localStorage.setItem("zenServiceMode", WHATSAPP_SERVICE_MODE);
 initCustomerFields();
 syncAccessoryDefaults();
 renderGroupNav();
@@ -940,6 +943,7 @@ function updateCart() {
     cartPanelTotal.textContent = `${formatMoney(grandTotal)}${getDeliveryTotalSuffix()}`;
     cartFoodTotal.textContent = formatMoney(foodTotal);
     cartAccessoryTotal.textContent = formatMoney(accessoryTotal);
+    if (cartDeliveryRow) cartDeliveryRow.hidden = serviceMode !== "delivery";
     cartDeliveryFee.textContent = getDeliveryLabel();
     cartGrandTotal.textContent = `${formatMoney(grandTotal)}${getDeliveryTotalSuffix()}`;
 
@@ -1131,10 +1135,14 @@ function buildWhatsAppOrderMessage() {
         "",
         "TOTAL",
         `Plats: ${formatMoney(foodTotal)}`,
-        `Accessoires: ${formatMoney(accessoryTotal)}`,
-        `Livraison: ${deliveryLabel}`,
-        `Total: ${formatMoney(foodTotal + accessoryTotal + deliveryFee)}${getDeliveryTotalSuffix()}`
+        `Accessoires: ${formatMoney(accessoryTotal)}`
     );
+    if (serviceMode === "delivery") {
+        lines.push(`Livraison: ${deliveryLabel}`);
+    } else {
+        lines.push("Service: A emporter");
+    }
+    lines.push(`Total: ${formatMoney(foodTotal + accessoryTotal + deliveryFee)}${getDeliveryTotalSuffix()}`);
 
     return lines.join("\n");
 }
@@ -1386,7 +1394,7 @@ function buildInvoiceDocument() {
             <div class="box">
                 <h2>Service</h2>
                 <p><strong>${serviceLabel}</strong></p>
-                <p>Livraison: ${deliveryLabel}</p>
+                ${serviceMode === "delivery" ? `<p>Livraison: ${deliveryLabel}</p>` : `<p>Retrait au restaurant</p>`}
                 ${serviceMode === "delivery" ? `<p>Distance Google Maps: ${escapeHtml(getDeliveryDistanceLabel())}</p>` : ""}
                 ${serviceMode === "delivery" ? `<p>Frais et distance a confirmer apres verification Google Maps.</p>` : ""}
                 ${deliveryMapUrl ? `<p><a href="${escapeHtml(deliveryMapUrl)}" target="_blank" rel="noopener">Verifier sur Google Maps</a></p>` : ""}
@@ -1410,10 +1418,10 @@ function buildInvoiceDocument() {
         <section class="totals">
             <div class="total-row"><span>Plats</span><strong>${formatMoney(foodTotal)}</strong></div>
             <div class="total-row"><span>Accessoires</span><strong>${formatMoney(accessoryTotal)}</strong></div>
-            <div class="total-row"><span>Livraison</span><strong>${deliveryLabel}</strong></div>
+            ${serviceMode === "delivery" ? `<div class="total-row"><span>Livraison</span><strong>${deliveryLabel}</strong></div>` : ""}
             <div class="total-row grand"><span>Total</span><strong>${formatMoney(grandTotal)}${getDeliveryTotalSuffix()}</strong></div>
         </section>
-        <p class="note">Document généré depuis le site Zen Sushi Wok. Les prix, disponibilités et frais de livraison restent à confirmer par le restaurant.</p>
+        <p class="note">Document généré depuis le site Zen Sushi Wok. Les prix et disponibilités restent à confirmer par le restaurant.</p>
     </main>
 </body>
 </html>`;
@@ -2165,12 +2173,12 @@ function findDishById(id) {
 }
 
 function applyServiceMode(mode) {
-    serviceMode = mode;
-    localStorage.setItem("zenServiceMode", mode);
-    serviceButtons.forEach((button) => button.classList.toggle("active", button.dataset.serviceMode === mode));
-    if (deliveryPanel) deliveryPanel.hidden = mode !== "delivery";
-    if (pickupPanel) pickupPanel.hidden = mode !== "pickup";
-    if (mode === "delivery") renderDeliveryResult();
+    const nextMode = WHATSAPP_SERVICE_MODE;
+    serviceMode = nextMode;
+    localStorage.setItem("zenServiceMode", nextMode);
+    serviceButtons.forEach((button) => button.classList.toggle("active", button.dataset.serviceMode === nextMode));
+    if (deliveryPanel) deliveryPanel.hidden = true;
+    if (pickupPanel) pickupPanel.hidden = nextMode !== "pickup";
     updateCart();
 }
 
