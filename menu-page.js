@@ -2342,6 +2342,3 @@ document.addEventListener("keydown", (event) => {
     }
 });
 
-window.addEventListener("scroll", () => {
-    document.body.classList.toggle("header-compact", window.scrollY > 80 || document.body.classList.contains("ordering-mode"));
-}, { passive: true });
